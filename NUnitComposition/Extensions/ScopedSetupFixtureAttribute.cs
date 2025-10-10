@@ -82,8 +82,8 @@ public class ScopedSetUpFixture : SetUpFixture // , IDisposableFixture
         TearDownMethods = [];
 
         var setups = TypeInfo
-            .GetMethodsWithAttribute<OneTimeSetUpAttribute>(true)
-            .Union(TypeInfo.GetMethodsWithAttribute<SetUpAttribute>(true))
+            .GetMethodsWithAttribute<SetUpAttribute>(true).OrderBy(CountBaseClasses)
+            .Union(TypeInfo.GetMethodsWithAttribute<OneTimeSetUpAttribute>(true))
             .ToArray();
         OneTimeSetUpMethods = setups;
         OneTimeTearDownMethods = TypeInfo
@@ -93,6 +93,18 @@ public class ScopedSetUpFixture : SetUpFixture // , IDisposableFixture
 
         CheckSetUpTearDownMethods(OneTimeSetUpMethods);
         CheckSetUpTearDownMethods(OneTimeTearDownMethods);
+    }
+
+    private static int CountBaseClasses(IMethodInfo x)
+    {
+        var declaringType = x.MethodInfo.DeclaringType;
+        var bases = 0;
+        while (declaringType?.BaseType != null)
+        {
+            bases++;
+            declaringType = declaringType.BaseType;
+        }
+        return bases;
     }
 
     private static string GetName(ITypeInfo type)
