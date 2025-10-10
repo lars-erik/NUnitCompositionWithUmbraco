@@ -11,7 +11,8 @@ You'll have to track whether your own schema is created in your own setup method
 
 This is a problem if you want to run a large number of tests that all need the same schema.  
 This repository contains an example of how to work around this by "hacking" the NUnit
-pipeline and changing the UmbracoIntegrationTest setup and teardown methods to be onetime variants.
+pipeline and modifying the UmbracoIntegrationTest setup and teardown methods to be onetime variants.  
+Everything else should work as expected.
 
 As of this writing, the "scoped setup fixtures" expose a static instance property that holds
 a reference to the currently active "scoped setup fixture". It is absolutely not ready for
@@ -28,9 +29,17 @@ There are subject of consideration for a proper NuGet package or possibly inclus
 
 ## Example
 
+There are two example "scoped" sets of tests in the [FeatureA](./UmbracoTestsComposition/FeatureA) and [FeatureB](./UmbracoTestsComposition/FeatureB) folders of the [UmbracoTestsComposition](./UmbracoTestsComposition) project.
+
+As with NUnit SetUpFixtures, the scoped setup fixture must be in the root namespace of the tests that need it.  
+Because there's a lot of singletons and stuff in Umbraco, it is likely not possible, and at least not recommended
+to have more than one scoped setup fixture per namespace, and no further ones in child namespaces.
+
 **A scoped setup fixture**
 
 ```csharp
+namespace FeatureA;
+
 [ScopedSetupFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerFixture)]
 public class ScopedSetupFixture : ScopedUmbracoIntegrationSetupFixture<MyScopedSetupFixture>
@@ -55,10 +64,24 @@ public class ScopedSetupFixture : ScopedUmbracoIntegrationSetupFixture<MyScopedS
 }
 ```
 
-**A test with access to the scoped fixture**
+**A couple of test fixtures with access to the scoped setup fixture**
 
 ```csharp
+namespace FeatureA;
+
 public class ATestWithAccessToTheFixture
+{
+    [Test]
+    public void ICanReachUmbraco()
+    {
+        var dataTypeService = ScopedSetupFixture.Instance.Services.GetRequiredService<IDataTypeService>();
+        var allTypes = (await dataTypeService.GetAllAsync()).Take(3).ToList();
+        Console.WriteLine($"We've got data types like {String.Join(',', allTypes.Select(x => x.Name))}...");
+        Assert.That(allTypes, Has.Count.GreaterThan(0));
+    }
+}
+
+public class AnotherTestWithAccessToTheFixture
 {
     [Test]
     public void ICanReachUmbraco()
