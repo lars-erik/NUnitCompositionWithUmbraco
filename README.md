@@ -22,7 +22,7 @@ parallel threads or other multi-threaded uses.
 There are subject of consideration for a proper NuGet package or possibly inclusion in Umbraco.
 
 | Class | Description | Dependencies |
-| --- | --- |
+| --- | --- | --- |
 | [ScopedSetupFixtureAttribute](./NUnitComposition/Extensions/ScopedSetupFixtureAttribute.cs) | A replacement for the NUnit [SetUpFixture] attribute that allows for scoped setup/teardown when inheriting library base classes that use [SetUp] and [TearDown]. | Possible to use with NUnit alone |
 | [ScopedUmbracoIntegrationSetupFixture](./UmbracoTestsComposition/Common/ScopedUmbracoIntegrationSetupFixture.cs) | An intermediate base class between a scoped setup fixture and UmbracoIntegrationTest, providing access to the Umbraco instance | Dependent on UmbracoIntegrationTests |
 
