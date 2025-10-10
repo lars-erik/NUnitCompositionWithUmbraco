@@ -24,6 +24,7 @@ public class FeatureBScope() : ScopedUmbracoIntegrationSetupFixture<FeatureBScop
         var dataTypeService = Services.GetRequiredService<IDataTypeService>();
         var editorCollection = Services.GetRequiredService<DataEditorCollection>();
         var textBoxEditor = editorCollection.Single(x => x.Alias == Constants.PropertyEditors.Aliases.TextBox);
+
         var result = await dataTypeService.CreateAsync(
             new DataType(textBoxEditor, configSerializer)
             {
