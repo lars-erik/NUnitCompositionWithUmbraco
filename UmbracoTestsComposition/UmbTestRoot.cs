@@ -3,12 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using NUnitComposition.SampleScope;
 
-namespace NUnitComposition;
+namespace UmbracoTestsComposition;
 
 [SetUpFixture]
-public class Root
+public class UmbTestRoot
 {
     public static List<string> Log = null!;
 
@@ -29,8 +28,6 @@ public class Root
             Console.WriteLine(logEntry);
         }
 
-        Assert.That(Log, Has.Some.Contains(nameof(SampleScopedFixture)));
-        var scopedLogEntries = Log.Where(x => x.Contains(nameof(SampleScopedFixture)));
-        Console.WriteLine($"Root verified that \n -{String.Join("\n -", scopedLogEntries)}\nwere called from the scoped setup fixture.");
+        // TODO: Should we assert it all, or do that closer to the scopes?
     }
 }

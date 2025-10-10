@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using NUnit.Framework.Interfaces;
 using NUnit.Framework.Internal;
+using NUnit.Framework.Internal.Commands;
 
 namespace NUnitComposition.Extensions;
 
@@ -16,7 +17,7 @@ public class ScopedSetupFixtureAttribute : SetUpFixtureAttribute, IFixtureBuilde
 
     public new IEnumerable<TestSuite> BuildFrom(ITypeInfo typeInfo)
     {
-        SetUpFixture fixture = new ScopedSetUpFixture(typeInfo);
+        var fixture = new ScopedSetUpFixture(typeInfo);
 
         if (fixture.RunState != RunState.NotRunnable)
         {
@@ -26,8 +27,8 @@ public class ScopedSetupFixtureAttribute : SetUpFixtureAttribute, IFixtureBuilde
         }
 
         fixture.ApplyAttributesToTest(typeInfo.Type);
-
-        return new TestSuite[] { fixture };
+        
+        return [fixture];
     }
 
     private static bool IsValidFixtureType(ITypeInfo typeInfo, [NotNullWhen(false)] ref string? reason)
@@ -47,32 +48,27 @@ public class ScopedSetupFixtureAttribute : SetUpFixtureAttribute, IFixtureBuilde
             }
         }
 
-        // These'll be "moved" by the ScopedSetUpFixture instance by just adding them to the onetimes
-        /*
-        var attributesToMove = new[]
-        {
-            typeof(SetUpAttribute),
-            typeof(TearDownAttribute)
-        };
-
-        foreach (Type invalidType in attributesToMove)
-        {
-            if (typeInfo.HasMethodWithAttribute(invalidType))
-            {
-                reason = invalidType.Name + " attribute is soon to be changed to OneTime...";
-                return false;
-            }
-        }
-        */
-
         return true;
     }
+
 }
 
 // TODO: Need to figure out how to replicate the dispose fixture command since the IDisposableFixture interface is internal to NUnit
 // TODO: Can we just use the built-in SetUpFixture?
 public class ScopedSetUpFixture : SetUpFixture // , IDisposableFixture
 {
+    internal class FakeTestMethodWrapperCommand : DelegatingTestCommand
+    {
+        public FakeTestMethodWrapperCommand(TestCommand innerCommand) : base(innerCommand)
+        {
+        }
+
+        public override TestResult Execute(TestExecutionContext context)
+        {
+            return innerCommand.Execute(context);
+        }
+    }
+
     #region Constructor
 
     /// <summary>
@@ -85,10 +81,11 @@ public class ScopedSetUpFixture : SetUpFixture // , IDisposableFixture
         SetUpMethods = [];
         TearDownMethods = [];
 
-        OneTimeSetUpMethods = TypeInfo
+        var setups = TypeInfo
             .GetMethodsWithAttribute<OneTimeSetUpAttribute>(true)
             .Union(TypeInfo.GetMethodsWithAttribute<SetUpAttribute>(true))
             .ToArray();
+        OneTimeSetUpMethods = setups;
         OneTimeTearDownMethods = TypeInfo
             .GetMethodsWithAttribute<OneTimeTearDownAttribute>(true)
             .Union(TypeInfo.GetMethodsWithAttribute<TearDownAttribute>(true))
@@ -128,6 +125,8 @@ public class ScopedSetUpFixture : SetUpFixture // , IDisposableFixture
     /// </summary>
     public new ITypeInfo TypeInfo => base.TypeInfo!;
 
+    public override string? MethodName => OneTimeSetUpMethods.First().Name;
+
     /// <summary>
     /// Creates a filtered copy of the test suite.
     /// </summary>
@@ -138,4 +137,15 @@ public class ScopedSetUpFixture : SetUpFixture // , IDisposableFixture
     }
 
     #endregion
+
+    public static explicit operator TestMethod(ScopedSetUpFixture fixture)
+    {
+        return new TestMethod(fixture.OneTimeSetUpMethods.First(), fixture);
+    }
+    /*
+    public static implicit operator TestMethod(ScopedSetUpFixture fixture)
+    {
+        return new TestMethod(fixture.OneTimeSetUpMethods.First(), fixture);
+    }
+    */
 }
