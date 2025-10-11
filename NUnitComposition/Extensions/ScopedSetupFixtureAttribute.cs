@@ -5,11 +5,16 @@ using NUnit.Framework.Internal;
 namespace NUnitComposition.Extensions;
 
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
-public class ScopedSetupFixtureAttribute : SetUpFixtureAttribute, IFixtureBuilder
+public class ScopedSetupFixtureAttribute : SetUpFixtureAttribute, IFixtureBuilder2
 {
     // TODO: Figure out if we want to implement IFixtureBuilder2 as well
 
     IEnumerable<TestSuite> IFixtureBuilder.BuildFrom(ITypeInfo typeInfo)
+    {
+        return BuildFrom(typeInfo);
+    }
+
+    public IEnumerable<TestSuite> BuildFrom(ITypeInfo typeInfo, IPreFilter filter)
     {
         return BuildFrom(typeInfo);
     }

@@ -1,23 +1,10 @@
 ﻿using NUnit.Framework.Interfaces;
 using NUnit.Framework.Internal;
-using NUnit.Framework.Internal.Commands;
 
 namespace NUnitComposition.Extensions;
 
 public class ScopedSetupFixture : SetUpFixture
 {
-    internal class FakeTestMethodWrapperCommand : DelegatingTestCommand
-    {
-        public FakeTestMethodWrapperCommand(TestCommand innerCommand) : base(innerCommand)
-        {
-        }
-
-        public override TestResult Execute(TestExecutionContext context)
-        {
-            return innerCommand.Execute(context);
-        }
-    }
-
     public ScopedSetupFixture(ITypeInfo type) : base(type)
     {
         Name = GetName(type);

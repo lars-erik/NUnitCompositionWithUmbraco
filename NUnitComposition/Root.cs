@@ -29,8 +29,8 @@ public class Root
             Console.WriteLine(logEntry);
         }
 
-        Assert.That(Log, Has.Some.Contains(nameof(SampleScopedFixture)));
-        var scopedLogEntries = Log.Where(x => x.Contains(nameof(SampleScopedFixture)));
+        Assert.That(Log, Has.Some.Contains(nameof(SampleScopedSetupFixture)));
+        var scopedLogEntries = Log.Where(x => x.Contains(nameof(SampleScopedSetupFixture)));
         Console.WriteLine($"Root verified that \n -{String.Join("\n -", scopedLogEntries)}\nwere called from the scoped setup fixture.");
     }
 }
