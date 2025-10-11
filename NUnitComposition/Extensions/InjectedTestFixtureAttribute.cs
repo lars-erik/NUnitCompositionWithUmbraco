@@ -4,9 +4,9 @@ using NUnit.Framework.Internal;
 
 namespace NUnitComposition.Extensions
 {
-    public class InjectedTestFixtureAttribute : ScopedTestFixtureAttribute, IFixtureBuilder2, ITestData
+    public class InjectedTestFixtureAttribute<T> : ScopedTestFixtureAttribute, IFixtureBuilder2 // , ITestData
     {
-        private readonly Type injectionSource;
+        private readonly Type injectionSource = typeof(T);
         private ParameterInfo[] parameters = [];
 
         // TODO: This makes JetBrains' runner think this is a parameterized fixture
@@ -19,10 +19,10 @@ namespace NUnitComposition.Extensions
         //    }
         //}
 
-        public InjectedTestFixtureAttribute(Type injectionSource)
-        {
-            this.injectionSource = injectionSource;
-        }
+        //public InjectedTestFixtureAttribute(Type injectionSource)
+        //{
+        //    this.injectionSource = injectionSource;
+        //}
 
         IEnumerable<TestSuite> IFixtureBuilder2.BuildFrom(ITypeInfo typeInfo, IPreFilter filter)
         {

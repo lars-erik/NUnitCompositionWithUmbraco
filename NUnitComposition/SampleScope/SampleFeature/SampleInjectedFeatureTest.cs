@@ -2,7 +2,7 @@
 
 namespace NUnitComposition.SampleScope.SampleFeature;
 
-[InjectedTestFixture(typeof(SampleScopedSetupFixture))]
+[InjectedTestFixture<SampleScopedSetupFixture>]
 public class SampleInjectedFeatureTest
 {
     private readonly string someString;
@@ -10,6 +10,7 @@ public class SampleInjectedFeatureTest
 
     public SampleInjectedFeatureTest()
     {
+
     }
 
     public SampleInjectedFeatureTest(string someString, int someInt)
