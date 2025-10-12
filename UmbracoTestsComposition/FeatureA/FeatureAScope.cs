@@ -1,27 +1,33 @@
-﻿using NUnit.Framework.Internal;
-using NUnitComposition.Extensions;
+﻿using NUnitComposition.DependencyInjection;
+using NUnitComposition.Extensibility;
+using NUnitComposition.Lifecycle;
 using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
 using UmbracoTestsComposition.Common;
 
 namespace UmbracoTestsComposition.FeatureA;
 
-[ScopedSetupFixture]
 [UmbracoTest(
     Database = UmbracoTestOptions.Database.NewSchemaPerFixture, 
     Logger = UmbracoTestOptions.Logger.Console
 )]
-public class FeatureAScope() : ScopedUmbracoIntegrationSetupFixture<FeatureAScope>(nameof(ScopedSetup))
+[ExtendableSetUpFixture]
+[MakeOneTimeLifecycle(
+    [nameof(Setup), nameof(SetUp_Logging)],
+    [nameof(TearDown), nameof(TearDownAsync), nameof(FixtureTearDown), nameof(TearDown_Logging)]
+)]
+[InjectionProvider(nameof(Services))]
+public class FeatureAScope : UmbracoIntegrationTest
 {
-    [SetUp]
-    public void ScopedSetup()
-    {
-        UmbTestRoot.Log.Add($"{nameof(FeatureAScope)} {nameof(ScopedSetup)} called");
-    }
+    // TODO: Could we possibly add this using Castle.DynamicProxy or something?
+    public void StubForUmbracoTestDiscovery() {}
 
-    [TearDown]
-    public void ScopedTeardown()
+    public FeatureAScope()
     {
-        UmbTestRoot.Log.Add($"{nameof(FeatureAScope)} {nameof(ScopedTeardown)} called");
+        // TODO: Figure out how to avoid having to do this in each setup fixture.
+        // Umbraco's TestOptionAttributeBase looks for the UmbracoTest attribute via the current test method or its declaring type.
+        // We need to set a dummy test method from this exact type.
+        // It could possibly be done by sneaking it in to the first instance of onetime setups, but we still need a declared method on this type.
+        this.ExposeUmbracoTestAttribute(nameof(StubForUmbracoTestDiscovery));
     }
 }

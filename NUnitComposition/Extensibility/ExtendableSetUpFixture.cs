@@ -1,8 +1,7 @@
 ﻿using NUnit.Framework.Interfaces;
 using NUnit.Framework.Internal;
 
-namespace NUnitComposition.Extensions;
-
+namespace NUnitComposition.Extensibility;
 
 public class ExtendableSetUpFixture : SetUpFixture, IExtendableLifecycle
 {

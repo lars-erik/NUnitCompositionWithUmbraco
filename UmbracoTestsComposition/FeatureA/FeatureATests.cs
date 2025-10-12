@@ -1,14 +1,21 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using NUnitComposition.DependencyInjection;
 using Umbraco.Cms.Core.Services;
 
 namespace UmbracoTestsComposition.FeatureA;
 
+[Inject(nameof(Inject))]
 public class FeatureATests
 {
-    [Test]
-    public async Task Can_Use_Umbraco_From_The_Scoped_Setup()
+    private IDataTypeService dataTypeService = null!;
+
+    public void Inject(IDataTypeService dataTypeService)
     {
-        var dataTypeService = FeatureAScope.Instance!.Services.GetRequiredService<IDataTypeService>();
+        this.dataTypeService = dataTypeService;
+    }
+
+    [Test]
+    public async Task CanGetDataTypeFromInjectedService()
+    {
         var allTypes = (await dataTypeService.GetAllAsync()).Take(3).ToList();
         Console.WriteLine($"We've got data types like {String.Join(',', allTypes.Select(x => x.Name))}...");
         Assert.That(allTypes, Has.Count.GreaterThan(0));

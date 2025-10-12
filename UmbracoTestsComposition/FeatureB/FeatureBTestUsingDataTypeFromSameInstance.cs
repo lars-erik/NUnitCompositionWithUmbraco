@@ -4,7 +4,7 @@ using Umbraco.Cms.Core.Services;
 namespace UmbracoTestsComposition.FeatureB;
 
 [Inject(nameof(Inject))]
-public class FeatureBTestUsingDataType
+public class FeatureBTestUsingDataTypeFromSameInstance
 {
     private IDataTypeService dataTypeService = null!;
 

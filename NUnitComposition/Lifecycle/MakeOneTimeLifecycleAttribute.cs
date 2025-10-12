@@ -1,11 +1,10 @@
 ﻿using NUnit.Framework.Interfaces;
 using NUnit.Framework.Internal;
-using System.Reflection;
-using NUnitComposition.Extensions;
+using NUnitComposition.Extensibility;
 
-namespace NUnitComposition.Mutation;
+namespace NUnitComposition.Lifecycle;
 
-[AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
+[AttributeUsage(AttributeTargets.Class)]
 public sealed class MakeOneTimeLifecycleAttribute : Attribute, IApplyToTest
 {
     private readonly string[] setUpNames;
@@ -26,8 +25,6 @@ public sealed class MakeOneTimeLifecycleAttribute : Attribute, IApplyToTest
 
         if (test is IExtendableLifecycle extendable)
         {
-            Console.WriteLine($"Moving lifecycle methods for {suite.TypeInfo.Type.Name}: {String.Join(", ", setUpNames.Union(tearDownNames))}");
-
             var setUpsToMove = extendable.SetUpMethods.Where(x => setUpNames.Contains(x.Name)).ToArray();
             var tearDownsToMove = extendable.TearDownMethods.Where(x => tearDownNames.Contains(x.Name)).ToArray();
 
@@ -45,7 +42,7 @@ public sealed class MakeOneTimeLifecycleAttribute : Attribute, IApplyToTest
         }
         else
         {
-            throw new Exception($"{nameof(MakeOneTimeLifecycleAttribute)} must be applied to a test class with an {nameof(IExtendableTestBuilder)} like {nameof(ExtendableSetUpFixtureAttribute)}.");
+            throw new Exception($"{nameof(MakeOneTimeLifecycleAttribute)} must be applied to a test fixture with an {nameof(IExtendableLifecycle)} implementation like {nameof(ExtendableSetUpFixture)}.");
         }
     }
 }

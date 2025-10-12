@@ -1,16 +1,16 @@
-﻿using NUnitComposition.Extensions;
+﻿using NUnitComposition.Extensibility;
 using NUnitComposition.ImaginaryLibrary;
-using NUnitComposition.Mutation;
+using NUnitComposition.Lifecycle;
 
-namespace NUnitComposition.MutationTests;
+namespace NUnitComposition.LifecycleMutationTests;
 
 [ExtendableSetUpFixture]
 [MakeOneTimeLifecycle([nameof(SetUp)], [nameof(TearDown)])]
-public class MutatedSetUpFixture : ImaginaryLibraryTestBase
+public class DerivedSetUpFixtureWithFixedLifecycle : ImaginaryLibraryTestBase
 {
-    private static MutatedSetUpFixture? instance;
+    private static DerivedSetUpFixtureWithFixedLifecycle? instance;
 
-    public static MutatedSetUpFixture Instance
+    public static DerivedSetUpFixtureWithFixedLifecycle Instance
     {
         get
         {
