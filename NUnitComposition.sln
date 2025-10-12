@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UmbracoTestsComposition", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NUnitComposition.Tests", "NUnitComposition.Tests\NUnitComposition.Tests.csproj", "{AD0A2B21-3669-FFB5-C494-7DE4E700280C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NUnitComposition.Core", "NUnitComposition.Core\NUnitComposition.Core.csproj", "{FAC21EE1-DA69-4516-96B4-0FF6E1D4AD4B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{AD0A2B21-3669-FFB5-C494-7DE4E700280C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AD0A2B21-3669-FFB5-C494-7DE4E700280C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AD0A2B21-3669-FFB5-C494-7DE4E700280C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FAC21EE1-DA69-4516-96B4-0FF6E1D4AD4B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FAC21EE1-DA69-4516-96B4-0FF6E1D4AD4B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FAC21EE1-DA69-4516-96B4-0FF6E1D4AD4B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FAC21EE1-DA69-4516-96B4-0FF6E1D4AD4B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

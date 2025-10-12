@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\NUnitComposition.Core\NUnitComposition.Core.csproj" />
     <ProjectReference Include="..\NUnitComposition.Tests\NUnitComposition.Tests.csproj" />
   </ItemGroup>
 
