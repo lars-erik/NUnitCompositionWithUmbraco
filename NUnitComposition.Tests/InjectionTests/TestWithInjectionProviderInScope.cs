@@ -1,7 +1,7 @@
-﻿using NUnitComposition.ImaginaryLibrary;
-using NUnitComposition.DependencyInjection;
+﻿using NUnitComposition.DependencyInjection;
+using NUnitComposition.ImaginaryLibrary;
 
-namespace NUnitComposition.InjectionTests;
+namespace NUnitComposition.Tests.InjectionTests;
 
 [Inject(nameof(Inject))]
 public class TestWithInjectionProviderInScope

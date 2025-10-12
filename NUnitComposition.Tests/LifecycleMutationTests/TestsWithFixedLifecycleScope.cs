@@ -1,6 +1,6 @@
 ﻿using NUnitComposition.ImaginaryLibrary;
 
-namespace NUnitComposition.LifecycleMutationTests;
+namespace NUnitComposition.Tests.LifecycleMutationTests;
 
 public class TestsWithFixedLifecycleScope
 {

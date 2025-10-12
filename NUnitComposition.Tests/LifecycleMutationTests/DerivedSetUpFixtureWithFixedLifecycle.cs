@@ -2,7 +2,7 @@
 using NUnitComposition.ImaginaryLibrary;
 using NUnitComposition.Lifecycle;
 
-namespace NUnitComposition.LifecycleMutationTests;
+namespace NUnitComposition.Tests.LifecycleMutationTests;
 
 [ExtendableSetUpFixture]
 [MakeOneTimeLifecycle([nameof(SetUp)], [nameof(TearDown)])]

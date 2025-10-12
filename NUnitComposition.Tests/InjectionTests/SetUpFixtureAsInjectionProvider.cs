@@ -3,7 +3,7 @@ using NUnitComposition.Extensibility;
 using NUnitComposition.ImaginaryLibrary;
 using NUnitComposition.Lifecycle;
 
-namespace NUnitComposition.InjectionTests;
+namespace NUnitComposition.Tests.InjectionTests;
 
 [ExtendableSetUpFixture]
 [MakeOneTimeLifecycle([nameof(SetUp)], [nameof(TearDown)])]
