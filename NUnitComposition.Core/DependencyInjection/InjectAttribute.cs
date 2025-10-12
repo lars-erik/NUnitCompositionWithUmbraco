@@ -8,10 +8,12 @@ namespace NUnitComposition.DependencyInjection;
 public class InjectAttribute : Attribute, ITestAction
 {
     private readonly string injectionMethodName;
+    private readonly string? setUpAfterInjection;
 
-    public InjectAttribute(string injectionMethod)
+    public InjectAttribute(string injectionMethod, string? setUpAfterInjection = null)
     {
         this.injectionMethodName = injectionMethod;
+        this.setUpAfterInjection = setUpAfterInjection;
     }
 
     public void BeforeTest(ITest test)
@@ -58,7 +60,34 @@ public class InjectAttribute : Attribute, ITestAction
             args.Add(service);
         }
 
-        injectionMethod.Invoke(test.Fixture, args.ToArray());
+        if (injectionMethod.ReturnType.IsAssignableTo(typeof(Task)))
+        {
+            var task = (Task)injectionMethod.Invoke(test.Fixture, args.ToArray())!;
+            task.GetAwaiter().GetResult();
+        }
+        else
+        {
+            injectionMethod.Invoke(test.Fixture, args.ToArray());
+        }
+
+        if (!String.IsNullOrWhiteSpace(setUpAfterInjection))
+        {
+            var setUpMethod = test.Fixture.GetType().GetMethod(setUpAfterInjection, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy);
+            if (setUpMethod == null)
+            {
+                throw new Exception($"Configured setUp method {setUpAfterInjection} was not found on {test.GetType().Name}");
+            }
+
+            if (setUpMethod.ReturnType.IsAssignableTo(typeof(Task)))
+            {
+                var task = (Task)setUpMethod.Invoke(test.Fixture, null)!;
+                task.GetAwaiter().GetResult();
+            }
+            else
+            {
+                setUpMethod.Invoke(test.Fixture, null);
+            }
+        }
     }
 
     public void AfterTest(ITest test)

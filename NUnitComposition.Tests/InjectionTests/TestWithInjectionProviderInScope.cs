@@ -37,13 +37,27 @@ public class TestWithInjectionProviderInScope
     [OneTimeTearDown]
     public void VerifySameInstanceWasCalled()
     {
-        Assert.That(dependency.StuffDone, Has.Length.GreaterThanOrEqualTo(2));
+        try
+        {
+            Assert.That(dependency.StuffDone, Has.Length.GreaterThanOrEqualTo(2));
+        }
+        catch(Exception e)
+        {
+            Assert.Fail(e.Message);
+        }
     }
 
     private async Task VerifyDependencyUse()
     {
-        var initialCount = dependency.StuffDone.Length;
-        await dependency.DoStuff();
-        Assert.That(dependency.StuffDone, Has.Length.GreaterThan(initialCount));
+        try
+        {
+            var initialCount = dependency.StuffDone.Length;
+            await dependency.DoStuff();
+            Assert.That(dependency.StuffDone, Has.Length.GreaterThan(initialCount));
+        }
+        catch (Exception e)
+        {
+            Assert.Fail(e.Message);
+        }
     }
 }
