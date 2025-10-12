@@ -1,5 +1,4 @@
 ﻿using NUnitComposition.DependencyInjection;
-using NUnitComposition.Extensibility;
 using Umbraco.Cms.Api.Management.Factories;
 using Umbraco.Cms.Api.Management.ViewModels.DataType;
 using Umbraco.Cms.Core;
@@ -47,8 +46,6 @@ public class TransactionSetUpFixture
     {
         // TODO: Figure out how to make Inject run before OneTimeSetUps.
     }
-
-    //[OneTimeSetUp]
 
     [OneTimeTearDown]
     public void TearDown()
