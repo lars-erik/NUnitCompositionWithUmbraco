@@ -1,12 +1,11 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using NUnit.Framework.Interfaces;
+﻿using NUnit.Framework.Interfaces;
 using NUnit.Framework.Internal;
+using System.Diagnostics.CodeAnalysis;
 
 namespace NUnitComposition.Extensions;
 
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
-[Obsolete("Use ExtendableSetUpFixture with MakeOneTimeLifecycle")]
-public class ScopedSetupFixtureAttribute : SetUpFixtureAttribute, IFixtureBuilder2
+public class ExtendableSetUpFixtureAttribute : SetUpFixtureAttribute, IFixtureBuilder2, IExtendableTestBuilder
 {
     IEnumerable<TestSuite> IFixtureBuilder.BuildFrom(ITypeInfo typeInfo)
     {
@@ -20,21 +19,22 @@ public class ScopedSetupFixtureAttribute : SetUpFixtureAttribute, IFixtureBuilde
 
     public new IEnumerable<TestSuite> BuildFrom(ITypeInfo typeInfo)
     {
-        var fixture = new ScopedSetupFixture(typeInfo);
+        var fixture = new ExtendableSetUpFixture(typeInfo);
+        fixture.ApplyAttributesToTest(typeInfo.Type);
 
         if (fixture.RunState != RunState.NotRunnable)
         {
             string? reason = null;
-            if (!IsValidFixtureType(typeInfo, ref reason))
+            if (!IsValidFixtureType(fixture, typeInfo, ref reason))
                 fixture.MakeInvalid(reason);
         }
 
-        fixture.ApplyAttributesToTest(typeInfo.Type);
-        
+        fixture.DelayedValidate();
+
         return [fixture];
     }
 
-    private static bool IsValidFixtureType(ITypeInfo typeInfo, [NotNullWhen(false)] ref string? reason)
+    private bool IsValidFixtureType(ExtendableSetUpFixture fixture, ITypeInfo typeInfo, [NotNullWhen(false)] ref string? reason)
     {
         if (!typeInfo.IsStaticClass)
         {
@@ -51,7 +51,11 @@ public class ScopedSetupFixtureAttribute : SetUpFixtureAttribute, IFixtureBuilde
             }
         }
 
+        if (fixture.SetUpMethods.Any() || fixture.TearDownMethods.Any())
+        {
+            reason = $"{typeInfo.Type.Name} may not have any SetUp or TearDown methods.";
+        }
+
         return true;
     }
-
 }

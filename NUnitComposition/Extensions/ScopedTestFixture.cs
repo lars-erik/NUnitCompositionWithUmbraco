@@ -3,6 +3,7 @@ using NUnit.Framework.Internal;
 
 namespace NUnitComposition.Extensions;
 
+[Obsolete("Use ExtendableSetUpFixture with MakeOneTimeLifecycle")]
 public class ScopedTestFixture : TestFixture
 {
     private object? fixture;

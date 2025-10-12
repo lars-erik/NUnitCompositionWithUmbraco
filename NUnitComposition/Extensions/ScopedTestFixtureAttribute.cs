@@ -5,6 +5,7 @@ using System.Reflection;
 
 namespace NUnitComposition.Extensions;
 
+[Obsolete("Use ExtendableSetUpFixture with MakeOneTimeLifecycle")]
 public class ScopedTestFixtureAttribute : TestFixtureAttribute, IFixtureBuilder2
 {
     private readonly NUnitTestFixtureBuilder builder = new NUnitTestFixtureBuilder();

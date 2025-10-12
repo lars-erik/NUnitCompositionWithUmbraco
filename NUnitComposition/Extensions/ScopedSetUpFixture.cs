@@ -3,6 +3,7 @@ using NUnit.Framework.Internal;
 
 namespace NUnitComposition.Extensions;
 
+[Obsolete("Use ExtendableSetUpFixture with MakeOneTimeLifecycle")]
 public class ScopedSetupFixture : SetUpFixture
 {
     public ScopedSetupFixture(ITypeInfo type) : base(type)
