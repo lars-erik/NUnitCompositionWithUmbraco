@@ -16,10 +16,5 @@ public class TestProgressFromSetUpFixtures
     public void Standard_SetUp_Has_Logged()
     {
         TestContext.Progress.WriteLine("Just another line for good measure.");
-
-        //Assert.That(
-        //    ConsoleListeningSetUp.LogBuilder.ToString(),
-        //    Contains.Substring(nameof(StandardSetUpFixtureLogsToProgressInOneTime))
-        //    );
     }
 }

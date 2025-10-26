@@ -27,7 +27,7 @@ public class SeedScope : UmbracoIntegrationTest
     [OneTimeSetUp]
     public async Task CountDataTypes()
     {
-        await TestContext.Progress.WriteLineAsync("WHY DOESN'T THIS GET TO LOG TO PROGRESS?");
+        await TestContext.Progress.WriteLineAsync("This gets logged to the progress output.");
 
         dataTypes = (await GetRequiredService<IDataTypeService>().GetAllAsync()).Count();
     }

@@ -1,25 +1,24 @@
-﻿using NUnit.Framework.Interfaces;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using NUnit.Framework.Interfaces;
 using NUnit.Framework.Internal;
 using NUnit.Framework.Internal.Commands;
 using NUnitComposition.Tests;
 using System.Text;
+using Castle.DynamicProxy;
 
 namespace NUnitComposition.Tests;
 
 [SetUpFixture]
 internal class ConsoleListeningSetUp
 {
-    private static ConsoleListeningSetUp? instance;
-
     [OneTimeSetUp]
     public void OneTimeSetUp()
     {
-        instance = this;
     }
 
     [OneTimeTearDown]
     public void OneTimeTearDown()
     {
-        instance = null;
     }
 }
