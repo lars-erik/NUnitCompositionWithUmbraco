@@ -1,4 +1,5 @@
-﻿using NUnit.Framework.Interfaces;
+﻿using System.Reflection;
+using NUnit.Framework.Interfaces;
 using NUnit.Framework.Internal;
 using NUnitComposition.Extensibility;
 
@@ -27,6 +28,10 @@ public class MakeOneTimeLifecycleAttribute : Attribute, IApplyToTest, IApplyToCo
         {
             return;
         }
+        else
+        {
+
+        }
 
         if (test is IExtendableLifecycle extendable)
         {
@@ -34,7 +39,9 @@ public class MakeOneTimeLifecycleAttribute : Attribute, IApplyToTest, IApplyToCo
             var tearDownsToMove = extendable.TearDownMethods.Where(x => tearDownNames.Contains(x.Name)).ToArray();
 
             // This should ensure that the base setup/teardowns are executed before and after the concrete onetime variants.
-            var newOneTimeSetUps = setUpsToMove.Union(extendable.OneTimeSetUpMethods).ToArray();
+            var newOneTimeSetUps = setUpsToMove
+                .Union(extendable.OneTimeSetUpMethods)
+                .ToArray();
             var newOneTimeTearDowns = extendable.OneTimeTearDownMethods.Union(tearDownsToMove).ToArray();
 
             var remainingSetUps = extendable.SetUpMethods.Except(setUpsToMove).ToArray();
@@ -42,6 +49,7 @@ public class MakeOneTimeLifecycleAttribute : Attribute, IApplyToTest, IApplyToCo
 
             extendable.SetUpMethods = remainingSetUps;
             extendable.TearDownMethods = remainingTearDowns;
+
             extendable.OneTimeSetUpMethods = newOneTimeSetUps;
             extendable.OneTimeTearDownMethods = newOneTimeTearDowns;
         }
