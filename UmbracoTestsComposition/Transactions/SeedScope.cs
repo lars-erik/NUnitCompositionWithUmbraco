@@ -13,26 +13,11 @@ namespace UmbracoTestsComposition.Transactions;
     Logger = UmbracoTestOptions.Logger.Console
 )]
 [ExtendableSetUpFixture]
-[OneTimeUmbracoSetup]
+[OneTimeUmbracoSetUp]
 [InjectionProvider(nameof(Services))]
-//[TestApplyToTestAndContext(nameof(SeedScope))]
-//[TestWrapSetUpTearDown]
 public class SeedScope : UmbracoIntegrationTest
 {
     private int dataTypes;
-    private readonly TestExecutionContext? originalContext;
-    private readonly Test? originalTest;
-    //private readonly TestExecutionContext? currentContext;
-    //private readonly Test? currentTest;
-
-    public SeedScope()
-    {
-        originalContext = TestExecutionContext.CurrentContext;
-        originalTest = originalContext.CurrentTest;
-        this.ExposeUmbracoTestAttribute(nameof(CountDataTypes));
-        //currentContext = TestExecutionContext.CurrentContext;
-        //currentTest = originalContext.CurrentTest;
-    }
 
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {
@@ -40,11 +25,8 @@ public class SeedScope : UmbracoIntegrationTest
     }
 
     [OneTimeSetUp]
-    [TestApplyToTestAndContext(nameof(CountDataTypes))]
     public async Task CountDataTypes()
     {
-        TestExecutionContext.CurrentContext.CurrentTest = originalTest;
-
         await TestContext.Progress.WriteLineAsync("WHY DOESN'T THIS GET TO LOG TO PROGRESS?");
 
         dataTypes = (await GetRequiredService<IDataTypeService>().GetAllAsync()).Count();

@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NUnitComposition.DependencyInjection;
 using NUnitComposition.Extensibility;
-using NUnitComposition.Lifecycle;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.PropertyEditors;
@@ -18,19 +17,11 @@ namespace UmbracoTestsComposition.FeatureB;
     Logger = UmbracoTestOptions.Logger.Console
 )]
 [ExtendableSetUpFixture]
-[MakeOneTimeLifecycle(
-    [nameof(Setup), nameof(SetUp_Logging)],
-    [nameof(TearDown), nameof(TearDownAsync), nameof(FixtureTearDown), nameof(TearDown_Logging)]
-)]
+[OneTimeUmbracoSetUp]
 [InjectionProvider(nameof(Services))]
 public class FeatureBScope : UmbracoIntegrationTest
 {
     public static readonly Guid DataTypeId = new Guid("215cdc52-4225-40d8-9c9a-36c560d4de7c");
-
-    public FeatureBScope()
-    {
-        this.ExposeUmbracoTestAttribute(nameof(CreateDataTypeForScope));
-    }
 
     [OneTimeSetUp]
     public async Task CreateDataTypeForScope()

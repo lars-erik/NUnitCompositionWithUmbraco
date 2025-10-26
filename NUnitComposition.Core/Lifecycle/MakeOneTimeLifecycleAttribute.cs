@@ -43,7 +43,7 @@ public class MakeOneTimeLifecycleAttribute : Attribute, IApplyToTest, IApplyToCo
 
             // This should ensure that the base setup/teardowns are executed before and after the concrete onetime variants.
             var newOneTimeSetUps = setUpsToMove
-                //.Select(mi => new InterceptingMethodWrapper(mi, mi.MethodInfo.DeclaringType, mi.MethodInfo))
+                .Select(mi => new InterceptingMethodWrapper(mi.TypeInfo.Type, mi.MethodInfo))
                 .Union(extendable.OneTimeSetUpMethods)
                 .ToArray();
             var newOneTimeTearDowns = extendable.OneTimeTearDownMethods.Union(tearDownsToMove).ToArray();
@@ -79,7 +79,7 @@ public class LifeCycleTestMethod : TestMethod
     public override string XmlElementName => "test-suite";
 }
 
-public class InterceptingMethodWrapper : IMethodInfo, IEquatable<MethodWrapper>
+public class InterceptingMethodWrapper : IMethodInfo, IEquatable<InterceptingMethodWrapper>
 {
     /// <summary>
     /// Invokes the method, converting any TargetInvocationException to an NUnitException.
@@ -89,13 +89,6 @@ public class InterceptingMethodWrapper : IMethodInfo, IEquatable<MethodWrapper>
     /// <returns>The return value from the invoked method</returns>
     public object? Invoke(object? fixture, params object?[]? args)
     {
-        //TestExecutionContext? originalContext;
-        //Test? originalTest;
-        //TestExecutionContext? currentContext;
-        //Test? currentTest;
-
-        return Reflect.InvokeMethod(inner.MethodInfo, fixture, args);
-
         if (fixture == null) throw new ArgumentNullException(nameof(fixture));
 
         var originalContext = TestExecutionContext.CurrentContext;
@@ -103,7 +96,9 @@ public class InterceptingMethodWrapper : IMethodInfo, IEquatable<MethodWrapper>
 
         try
         {
-            var methodInfo = new MethodWrapper(fixture.GetType(), fixture.GetType().GetMethods().First());
+            var anyDirectMethod = fixture.GetType().GetMethods().First();
+            var directDeclaration = anyDirectMethod.DeclaringType == fixture.GetType();
+            var methodInfo = new MethodWrapper(fixture.GetType(), anyDirectMethod);
             var setupMethodWrapper = new LifeCycleTestMethod(methodInfo, originalTest)
             {
                 Parent = originalTest
@@ -111,7 +106,7 @@ public class InterceptingMethodWrapper : IMethodInfo, IEquatable<MethodWrapper>
             ((TestSuite)originalTest).Add(setupMethodWrapper);
             originalContext.CurrentTest = setupMethodWrapper;
 
-            var result = Reflect.InvokeMethod(inner.MethodInfo, fixture, args);
+            var result = Reflect.InvokeMethod(MethodInfo, fixture, args);
             return result;
         }
         catch(Exception ex)
@@ -122,17 +117,13 @@ public class InterceptingMethodWrapper : IMethodInfo, IEquatable<MethodWrapper>
         {
             originalContext.CurrentTest = originalTest;
         }
-
     }
-
-    private readonly IMethodInfo inner;
 
     /// <summary>
     /// Construct a MethodWrapper for a Type and a MethodInfo.
     /// </summary>
-    public InterceptingMethodWrapper(IMethodInfo inner, Type? type, MethodInfo method)
+    public InterceptingMethodWrapper(Type type, MethodInfo method)
     {
-        this.inner = inner;
         TypeInfo = new TypeWrapper(type);
         MethodInfo = method;
     }
@@ -249,7 +240,7 @@ public class InterceptingMethodWrapper : IMethodInfo, IEquatable<MethodWrapper>
     /// <returns>A new IMethodInfo with the type arguments replaced</returns>
     public IMethodInfo MakeGenericMethod(params Type[] typeArguments)
     {
-        return new InterceptingMethodWrapper(inner, TypeInfo.Type, MethodInfo.MakeGenericMethod(typeArguments));
+        return new MethodWrapper(TypeInfo.Type, MethodInfo.MakeGenericMethod(typeArguments));
     }
 
     /// <summary>
@@ -267,7 +258,7 @@ public class InterceptingMethodWrapper : IMethodInfo, IEquatable<MethodWrapper>
     {
         return MethodInfo.HasAttribute<T>(inherit);
     }
-
+    
     /// <summary>
     /// Override ToString() so that error messages in NUnit's own tests make sense
     /// </summary>
@@ -278,47 +269,34 @@ public class InterceptingMethodWrapper : IMethodInfo, IEquatable<MethodWrapper>
 
     #endregion
 
-    /// <inheritdoc />
-    public bool Equals(MethodWrapper? other)
+    public bool Equals(InterceptingMethodWrapper? other)
     {
-        if (ReferenceEquals(null, other))
-        {
-            return false;
-        }
-
-        if (ReferenceEquals(this, other))
-        {
-            return true;
-        }
-
-        return MethodInfo.Equals(other.MethodInfo);
+        if (other is null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return TypeInfo.Equals(other.TypeInfo) && MethodInfo.Equals(other.MethodInfo);
     }
 
-    /// <inheritdoc />
     public override bool Equals(object? obj)
     {
-        if (ReferenceEquals(null, obj))
-        {
-            return false;
-        }
-
-        if (ReferenceEquals(this, obj))
-        {
-            return true;
-        }
-
-        if (obj.GetType() != GetType())
-        {
-            return false;
-        }
-
-        return Equals((MethodWrapper)obj);
+        if (obj is null) return false;
+        if (ReferenceEquals(this, obj)) return true;
+        if (obj.GetType() != GetType()) return false;
+        return Equals((InterceptingMethodWrapper)obj);
     }
 
-    /// <inheritdoc />
     public override int GetHashCode()
     {
-        return MethodInfo.GetHashCode();
+        return HashCode.Combine(TypeInfo, MethodInfo);
+    }
+
+    public static bool operator ==(InterceptingMethodWrapper? left, InterceptingMethodWrapper? right)
+    {
+        return Equals(left, right);
+    }
+
+    public static bool operator !=(InterceptingMethodWrapper? left, InterceptingMethodWrapper? right)
+    {
+        return !Equals(left, right);
     }
 }
 
