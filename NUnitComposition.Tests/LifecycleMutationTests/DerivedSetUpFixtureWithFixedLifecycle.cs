@@ -22,14 +22,25 @@ public class DerivedSetUpFixtureWithFixedLifecycle : ImaginaryLibraryTestBase
     public new T GetRequiredService<T>() where T : notnull => base.GetRequiredService<T>();
 
     [OneTimeSetUp]
-    public void OneTimeSetUp()
+    [NonParallelizable]
+    public async Task OneTimeSetUp()
     {
-        TestContext.Progress.WriteLine($"{GetType().Name}.{nameof(OneTimeSetUp)}");
+        await TestContext.Progress.WriteLineAsync($"{GetType().Name}.{nameof(OneTimeSetUp)}");
         if (instance != null)
         {
             throw new Exception("There's already an instance of MutatedSetUpFixture. Only one instance is allowed.");
         }
         instance = this;
+
+        var i = 0;
+        while (i < 2000)
+        {
+            Thread.Sleep(100);
+            await TestContext.Progress.WriteAsync(".");
+            i += 100;
+        }
+        await TestContext.Progress.WriteLineAsync();
+
     }
 
     [OneTimeTearDown]

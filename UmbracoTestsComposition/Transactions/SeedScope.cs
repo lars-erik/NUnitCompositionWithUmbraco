@@ -1,4 +1,5 @@
-﻿using NUnitComposition.DependencyInjection;
+﻿using NUnit.Framework.Internal;
+using NUnitComposition.DependencyInjection;
 using NUnitComposition.Extensibility;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Tests.Common.Testing;
@@ -17,10 +18,18 @@ namespace UmbracoTestsComposition.Transactions;
 public class SeedScope : UmbracoIntegrationTest
 {
     private int dataTypes;
+    private readonly TestExecutionContext? originalContext;
+    private readonly Test? originalTest;
+    private readonly TestExecutionContext? currentContext;
+    private readonly Test? currentTest;
 
     public SeedScope()
     {
+        originalContext = TestExecutionContext.CurrentContext;
+        originalTest = originalContext.CurrentTest;
         this.ExposeUmbracoTestAttribute(nameof(CountDataTypes));
+        currentContext = TestExecutionContext.CurrentContext;
+        currentTest = originalContext.CurrentTest;
     }
 
     protected override void CustomTestSetup(IUmbracoBuilder builder)
@@ -31,6 +40,8 @@ public class SeedScope : UmbracoIntegrationTest
     [OneTimeSetUp]
     public async Task CountDataTypes()
     {
+        await TestContext.Progress.WriteLineAsync("WHY DOESN'T THIS GET TO LOG TO PROGRESS?");
+
         dataTypes = (await GetRequiredService<IDataTypeService>().GetAllAsync()).Count();
     }
 

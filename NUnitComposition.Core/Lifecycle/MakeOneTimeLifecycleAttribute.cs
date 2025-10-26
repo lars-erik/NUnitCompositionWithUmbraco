@@ -5,7 +5,7 @@ using NUnitComposition.Extensibility;
 namespace NUnitComposition.Lifecycle;
 
 [AttributeUsage(AttributeTargets.Class)]
-public class MakeOneTimeLifecycleAttribute : Attribute, IApplyToTest
+public class MakeOneTimeLifecycleAttribute : Attribute, IApplyToTest, IApplyToContext
 {
     private readonly string[] setUpNames;
     private readonly string[] tearDownNames;
@@ -14,6 +14,11 @@ public class MakeOneTimeLifecycleAttribute : Attribute, IApplyToTest
     {
         this.setUpNames = setUpNames;
         this.tearDownNames = tearDownNames;
+    }
+
+    public void ApplyToContext(TestExecutionContext context)
+    {
+        
     }
 
     public void ApplyToTest(Test test)

@@ -2,6 +2,8 @@
 
 namespace NUnitComposition.ImaginaryLibrary;
 
+[SingleThreaded]
+[NonParallelizable]
 public abstract class ImaginaryLibraryTestBase
 {
     private IServiceProvider provider = null!;
