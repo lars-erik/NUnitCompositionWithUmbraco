@@ -14,7 +14,7 @@ namespace UmbracoTestsComposition.Transactions;
 )]
 [ExtendableSetUpFixture]
 [OneTimeUmbracoSetUp]
-[InjectionProvider(nameof(Services))]
+[ServiceProvider]
 public class SeedScope : UmbracoIntegrationTest
 {
     private int dataTypes;

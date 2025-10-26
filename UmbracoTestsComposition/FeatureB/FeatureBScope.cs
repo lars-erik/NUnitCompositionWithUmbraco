@@ -18,7 +18,7 @@ namespace UmbracoTestsComposition.FeatureB;
 )]
 [ExtendableSetUpFixture]
 [OneTimeUmbracoSetUp]
-[InjectionProvider(nameof(Services))]
+[ServiceProvider]
 public class FeatureBScope : UmbracoIntegrationTest
 {
     public static readonly Guid DataTypeId = new Guid("215cdc52-4225-40d8-9c9a-36c560d4de7c");

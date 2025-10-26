@@ -12,7 +12,7 @@ namespace UmbracoTestsComposition.FeatureA;
 )]
 [ExtendableSetUpFixture]
 [OneTimeUmbracoSetUp]
-[InjectionProvider(nameof(Services))]
+[ServiceProvider]
 public class FeatureAScope : UmbracoIntegrationTest
 {
 }

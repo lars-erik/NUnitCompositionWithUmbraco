@@ -124,14 +124,42 @@ public class FeatureATestUsingSeveralServices
 }
 ```
 
+## Snippets for re-usability with Umbraco
+
+**OneTimeUmbracoSetUp**
+
+```csharp
+public class OneTimeUmbracoSetUpAttribute() : MakeOneTimeLifecycleAttribute(
+    [nameof(UmbracoIntegrationTest.Setup), nameof(UmbracoIntegrationTest.SetUp_Logging)],
+    [nameof(UmbracoIntegrationTest.TearDown), nameof(UmbracoIntegrationTest.TearDownAsync), nameof(UmbracoIntegrationTest.FixtureTearDown), nameof(UmbracoIntegrationTest.TearDown_Logging)]
+)
+{
+}
+```
+
+**ServiceProviderAttribute**
+
+```csharp
+public class ServiceProviderAttribute() : InjectionProviderAttribute(nameof(IHost.Services)) { }
+```
+
+**A basic scoped Umbraco instance**
+
+```csharp
+[UmbracoTest(
+    Database = UmbracoTestOptions.Database.NewSchemaPerFixture, 
+    Logger = UmbracoTestOptions.Logger.Console
+)]
+[ExtendableSetUpFixture]
+[OneTimeUmbracoSetUp]
+[ServiceProvider]
+public class FeatureAScope : UmbracoIntegrationTest
+{
+}
+```
+
 ## Hopes and dreams
 
-### In general
-- Make sure informational exceptions are thrown if parallel tests are attempted, unless it can work
-- Figure out how to throw for failed setup without crashing VS
-- Make it a NuGet package
-
 ### With Umbraco
-- Allow scope hierarchies utilizing `ICoreScopeProvider` and `IServiceScope` (Possibly another attribute?)
-- Apply transactions such that each test fixture or test can roll back changes
-- Make a PR to Umbraco for an option on base tests to start Umbraco in onetimeset as well as setup exclusively.
+- Attribute for scope hierarchies utilizing `ICoreScopeProvider` and `IServiceScope`
+- Attribute transactions such that each test fixture or test can commit or roll back changes as needed
