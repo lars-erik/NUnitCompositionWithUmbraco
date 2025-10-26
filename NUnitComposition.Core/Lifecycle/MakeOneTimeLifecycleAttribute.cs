@@ -1,4 +1,6 @@
-﻿using NUnit.Framework.Interfaces;
+using System;
+using System.Linq;
+using NUnit.Framework.Interfaces;
 using NUnit.Framework.Internal;
 using NUnitComposition.Extensibility;
 
@@ -18,7 +20,7 @@ public class MakeOneTimeLifecycleAttribute : Attribute, IApplyToTest, IApplyToCo
 
     public void ApplyToContext(TestExecutionContext context)
     {
-        
+
     }
 
     public void ApplyToTest(Test test)
@@ -34,8 +36,11 @@ public class MakeOneTimeLifecycleAttribute : Attribute, IApplyToTest, IApplyToCo
             var tearDownsToMove = extendable.TearDownMethods.Where(x => tearDownNames.Contains(x.Name)).ToArray();
 
             // This should ensure that the base setup/teardowns are executed before and after the concrete onetime variants.
-            var newOneTimeSetUps = setUpsToMove.Union(extendable.OneTimeSetUpMethods).ToArray();
-            var newOneTimeTearDowns = extendable.OneTimeTearDownMethods.Union(tearDownsToMove).ToArray();
+            var wrappedSetUps = setUpsToMove.Select(ContextRestoringMethodWrapper.Wrap).ToArray();
+            var wrappedTearDowns = tearDownsToMove.Select(ContextRestoringMethodWrapper.Wrap).ToArray();
+
+            var newOneTimeSetUps = wrappedSetUps.Concat(extendable.OneTimeSetUpMethods).ToArray();
+            var newOneTimeTearDowns = extendable.OneTimeTearDownMethods.Concat(wrappedTearDowns).ToArray();
 
             var remainingSetUps = extendable.SetUpMethods.Except(setUpsToMove).ToArray();
             var remainingTearDowns = extendable.TearDownMethods.Except(tearDownsToMove).ToArray();
