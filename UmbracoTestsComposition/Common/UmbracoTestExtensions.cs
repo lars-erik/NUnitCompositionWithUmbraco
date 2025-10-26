@@ -1,5 +1,6 @@
 ﻿using NUnit.Framework.Interfaces;
 using NUnit.Framework.Internal;
+using NUnitComposition.Lifecycle;
 using Umbraco.Cms.Tests.Integration.Testing;
 
 namespace UmbracoTestsComposition.Common;
@@ -18,19 +19,4 @@ public static class UmbracoTestExtensions
         ((TestSuite)currentTest).Add(setupMethodWrapper);
         executionContext.CurrentTest = setupMethodWrapper;
     }
-}
-
-public class LifeCycleTestMethod : TestMethod
-{
-    public LifeCycleTestMethod(IMethodInfo method) : base(method)
-    {
-    }
-
-    public LifeCycleTestMethod(IMethodInfo method, Test? parentSuite) : base(method, parentSuite)
-    {
-    }
-
-    public override string TestType => nameof(SetUpFixture);
-
-    public override string XmlElementName => "test-suite";
 }
