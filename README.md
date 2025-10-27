@@ -1,5 +1,13 @@
 # NUnit Composition with Umbraco
 
+[![NuGet Version](https://img.shields.io/nuget/v/NUnitComposition.Core)](https://www.nuget.org/packages/NUnitComposition.Core)
+
+## Installation
+
+```
+dotnet add package NUnitComposition.Core --version 1.0.0-beta002
+```
+
 ## Overview / Problem statement
 
 **This package has an [InjectionSource] and an [Inject] attribute that may be used to enrich any NUnit suite, 
@@ -30,11 +38,44 @@ The tern "scope fixture" is used to descibe an NUnit fixture with only `OneTimeS
 | `[InjectionSource]` | Allows a scope fixture to expose an `IServiceProvider` instance to child tests. | NUnit |
 | `[Inject]` | Allows a test fixture to receive services from the closest `[InjectionSource]` in the hierarchy. | NUnit |
 
-## General Example
+## Dependency Injection Example
 
-// TODO... 👼
+```csharp
+[InjectionProvider(nameof(Services))]
+public class ScopeFixture
+{
+    public IServiceProvider Services { get; }
 
-## Umbraco Example
+    public ScopeFixture()
+    {
+        Services = new ServiceCollection()
+            .AddSingleton<IFooService, FooService>()
+            .AddSingleton<IBarService, BarService>()
+            .BuildServiceProvider();
+    }
+}
+
+[Inject(nameof(Inject))]
+public class SomeTests
+{
+    private IFooService fooService = null!;
+    private IBarService barService = null!;
+    public void Inject(IFooService fooService, IBarService barService)
+    {
+        this.fooService = fooService;
+        this.barService = barService;
+    }
+    [Test]
+    public void TestUsingInjectedServices()
+    {
+        Assert.That(fooService.DoFoo(), Is.EqualTo("Foo"));
+        Assert.That(barService.DoBar(), Is.EqualTo("Bar"));
+    }
+}
+
+```
+
+## Umbraco Example (Per-test scoped base class from library)
 
 There are two example "scoped" sets of tests in the [FeatureA](./UmbracoTestsComposition/FeatureA) and [FeatureB](./UmbracoTestsComposition/FeatureB) folders of the [UmbracoTestsComposition](./UmbracoTestsComposition) project.
 
@@ -154,6 +195,21 @@ public class ServiceProviderAttribute() : InjectionProviderAttribute(nameof(IHos
 [OneTimeUmbracoSetUp]
 [ServiceProvider]
 public class FeatureAScope : UmbracoIntegrationTest
+{
+}
+```
+
+**A base class for scoped Umbraco tests**
+
+```csharp
+[UmbracoTest(
+    Database = UmbracoTestOptions.Database.NewSchemaPerFixture,
+    Logger = UmbracoTestOptions.Logger.Console
+)]
+[ExtendableSetUpFixture]
+[OneTimeUmbracoSetUp]
+[ServiceProvider]
+public abstract class ScopedUmbracoIntegrationTest : UmbracoIntegrationTest
 {
 }
 ```

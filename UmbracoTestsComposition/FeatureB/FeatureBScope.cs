@@ -1,25 +1,14 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using NUnitComposition.DependencyInjection;
-using NUnitComposition.Extensibility;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.PropertyEditors;
 using Umbraco.Cms.Core.Serialization;
 using Umbraco.Cms.Core.Services;
-using Umbraco.Cms.Tests.Common.Testing;
-using Umbraco.Cms.Tests.Integration.Testing;
 using UmbracoTestsComposition.Common;
 
 namespace UmbracoTestsComposition.FeatureB;
 
-[UmbracoTest(
-    Database = UmbracoTestOptions.Database.NewSchemaPerFixture,
-    Logger = UmbracoTestOptions.Logger.Console
-)]
-[ExtendableSetUpFixture]
-[OneTimeUmbracoSetUp]
-[ServiceProvider]
-public class FeatureBScope : UmbracoIntegrationTest
+public class FeatureBScope : ScopedUmbracoIntegrationTest
 {
     public static readonly Guid DataTypeId = new Guid("215cdc52-4225-40d8-9c9a-36c560d4de7c");
 
