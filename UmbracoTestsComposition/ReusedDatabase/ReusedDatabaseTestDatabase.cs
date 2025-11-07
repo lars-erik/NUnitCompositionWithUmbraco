@@ -1,9 +1,10 @@
+using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Moq;
 using System.Data;
 using System.Data.Common;
 using System.IO;
-using Microsoft.Data.Sqlite;
-using Microsoft.Extensions.Logging;
-using Moq;
 using Umbraco.Cms.Core.Configuration;
 using Umbraco.Cms.Core.Configuration.Models;
 using Umbraco.Cms.Core.Events;
@@ -11,50 +12,62 @@ using Umbraco.Cms.Infrastructure.Migrations.Install;
 using Umbraco.Cms.Infrastructure.Persistence;
 using Umbraco.Cms.Persistence.Sqlite;
 using Umbraco.Cms.Tests.Common;
+using Umbraco.Cms.Tests.Integration.Implementations;
 using Umbraco.Cms.Tests.Integration.Testing;
 
 namespace UmbracoTestsComposition.ReusedDatabase;
 
-public class ReusedDatabaseTestDatabase : BaseTestDatabase, ITestDatabase
+public class ReusedTestDatabase : BaseTestDatabase, ITestDatabase
 {
     private readonly object syncRoot = new();
     private readonly TestUmbracoDatabaseFactoryProvider databaseFactoryProvider;
     private readonly ILoggerFactory loggerFactory;
+    private readonly IOptions<ReusedTestDatabaseOptions> options;
     private TestDbMeta? meta;
+    private bool wasRebuilt = false;
 
-    public ReusedDatabaseTestDatabase(
+    public ReusedTestDatabase
+    (
         TestUmbracoDatabaseFactoryProvider databaseFactoryProvider,
-        ILoggerFactory loggerFactory)
+        ILoggerFactory loggerFactory,
+        IOptions<ReusedTestDatabaseOptions> options
+    )
     {
         this.databaseFactoryProvider = databaseFactoryProvider;
         this.loggerFactory = loggerFactory;
+        this.options = options;
         _databaseFactory = databaseFactoryProvider.Create();
         _loggerFactory = loggerFactory;
     }
 
-    public (TestDbMeta Meta, bool Created) EnsureDatabase()
+    public TestDbMeta EnsureDatabase()
     {
         lock (syncRoot)
         {
             Initialize();
-            var needsRebuild = ReusedDatabaseStorage.ShouldRebuild(ReusedDatabaseSeed.SeedVersion);
-            if (needsRebuild)
+            if (ShouldRebuild())
             {
-                RebuildDatabaseFile();
-                return (meta!, true);
+                RebuildWithSchema();
             }
 
-            return (meta!, false);
+            return meta!;
         }
     }
 
-    public static void MarkDatabaseOutdated() => ReusedDatabaseStorage.MarkOutdated();
+    public async Task EnsureSeeded()
+    {
+        var shouldSeed = wasRebuilt || await (options?.Value?.NeedsNewSeed?.Invoke() ?? Task.FromResult(false));
+        if (shouldSeed)
+        {
+            await (options?.Value?.SeedData?.Invoke() ?? Task.CompletedTask);
+        }
+    }
 
     public override TestDbMeta AttachEmpty() => AttachSchema();
 
     public override TestDbMeta AttachSchema()
     {
-        return EnsureDatabase().Meta;
+        return EnsureDatabase();
     }
 
     public override void Detach(TestDbMeta id)
@@ -69,21 +82,25 @@ public class ReusedDatabaseTestDatabase : BaseTestDatabase, ITestDatabase
             return;
         }
 
+        var filePath = Path.GetFullPath(Path.Combine(nameof(ReusedDatabase), "reused-database.sqlite"), options.Value.WorkingDirectory);
+
         var builder = new SqliteConnectionStringBuilder
         {
-            DataSource = ReusedDatabaseStorage.DatabaseFilePath,
+            DataSource = filePath,
             Mode = SqliteOpenMode.ReadWriteCreate,
             Cache = SqliteCacheMode.Default,
             Pooling = false,
             ForeignKeys = true
         };
 
-        meta = new TestDbMeta(
+        meta = new TestDbMeta
+        (
             name: "ReusedDatabase",
             isEmpty: false,
             connectionString: builder.ConnectionString,
             providerName: Constants.ProviderName,
-            path: ReusedDatabaseStorage.DatabaseFilePath);
+            path: builder.DataSource
+        );
     }
 
     protected override DbConnection GetConnection(TestDbMeta meta) => new SqliteConnection(meta.ConnectionString);
@@ -103,12 +120,14 @@ public class ReusedDatabaseTestDatabase : BaseTestDatabase, ITestDatabase
         // Nothing to dispose. The database file is intentionally preserved between runs.
     }
 
-    private void RebuildDatabaseFile()
+    private void RebuildWithSchema()
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(ReusedDatabaseStorage.DatabaseFilePath)!);
-        if (File.Exists(ReusedDatabaseStorage.DatabaseFilePath))
+        var databaseDirectory = Path.GetDirectoryName(meta!.Path)!;
+        var databasePath = meta.Path!;
+        Directory.CreateDirectory(databaseDirectory);
+        if (File.Exists(databasePath))
         {
-            File.Delete(ReusedDatabaseStorage.DatabaseFilePath);
+            File.Delete(databasePath);
         }
 
         var dbFactory = databaseFactoryProvider.Create();
@@ -117,7 +136,7 @@ public class ReusedDatabaseTestDatabase : BaseTestDatabase, ITestDatabase
         using var database = (UmbracoDatabase)dbFactory.CreateDatabase();
         using var transaction = database.GetTransaction();
 
-        var options = new TestOptionsMonitor<InstallDefaultDataSettings>(
+        var installOptions = new TestOptionsMonitor<InstallDefaultDataSettings>(
             new InstallDefaultDataSettings { InstallData = InstallDefaultDataOption.All });
 
         var schemaCreator = new DatabaseSchemaCreator(
@@ -126,11 +145,21 @@ public class ReusedDatabaseTestDatabase : BaseTestDatabase, ITestDatabase
             loggerFactory,
             new UmbracoVersion(),
             Mock.Of<IEventAggregator>(),
-            options);
+            installOptions);
 
         schemaCreator.InitializeDatabaseSchema();
         transaction.Complete();
 
-        ReusedDatabaseStorage.MarkSeeded(ReusedDatabaseSeed.SeedVersion);
+        wasRebuilt = true;
+    }
+
+    public bool ShouldRebuild()
+    {
+        if (!File.Exists(meta!.Path))
+        {
+            return true;
+        }
+
+        return options.Value.NeedsNewSeed?.Invoke().GetAwaiter().GetResult() ?? false;
     }
 }

@@ -22,7 +22,7 @@ public class ReusedDatabaseATests
     {
         TestContext.Progress.WriteLine("[ReusedDatabaseA] Running DocumentTypeExists test.");
         using var scope = scopeProvider.CreateCoreScope(autoComplete: true);
-        var contentType = contentTypeService.Get(ReusedDatabaseSeed.DocumentTypeAlias);
+        var contentType = contentTypeService.Get("reusedDatabaseDocType");
         Assert.That(contentType, Is.Not.Null, "The reused database should contain the seeded document type.");
     }
 }

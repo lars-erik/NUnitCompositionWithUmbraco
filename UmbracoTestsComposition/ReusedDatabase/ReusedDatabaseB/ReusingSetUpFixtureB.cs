@@ -1,5 +1,5 @@
 namespace UmbracoTestsComposition.ReusedDatabase.ReusedDatabaseB;
 
-public class ReusingSetUpFixtureB : ReusedDatabaseSetUpBase
+public class ReusingSetUpFixtureB : ReusedDatabaseSampleSetUp
 {
 }
