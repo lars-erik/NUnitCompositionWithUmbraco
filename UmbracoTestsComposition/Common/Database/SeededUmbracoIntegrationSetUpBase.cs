@@ -61,7 +61,7 @@ public abstract class SeededUmbracoIntegrationSetUpBase(bool boot = false) : Umb
             GetRequiredService<IUmbracoContextFactory>().EnsureUmbracoContext();
         }
 
-        await testDatabase.EnsureSeeded();
+        await testDatabase.EnsureSeeded(Services);
     }
 
     [OneTimeTearDown]

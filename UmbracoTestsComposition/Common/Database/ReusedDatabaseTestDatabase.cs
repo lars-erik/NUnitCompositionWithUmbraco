@@ -54,12 +54,12 @@ public class ReusedTestDatabase : BaseTestDatabase, ITestDatabase
         }
     }
 
-    public async Task EnsureSeeded()
+    public async Task EnsureSeeded(IServiceProvider serviceProvider)
     {
         var shouldSeed = wasRebuilt || await (options?.Value?.NeedsNewSeed?.Invoke(meta!) ?? Task.FromResult(false));
         if (shouldSeed)
         {
-            await (options?.Value?.SeedData?.Invoke() ?? Task.CompletedTask);
+            await (options?.Value?.SeedData?.Invoke(serviceProvider) ?? Task.CompletedTask);
         }
     }
 

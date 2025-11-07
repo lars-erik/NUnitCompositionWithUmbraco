@@ -113,7 +113,7 @@ public abstract class SeededUmbracoTestServerSetUpBase<TMainController> : Umbrac
     public async Task EnsureReusedDatabaseAsync()
     {
         await TestContext.Progress.WriteLineAsync($"[{GetType().Name}] Ensuring seeded database.");
-        await testDatabase.EnsureSeeded();
+        await testDatabase.EnsureSeeded(Services);
     }
 
     [OneTimeTearDown]

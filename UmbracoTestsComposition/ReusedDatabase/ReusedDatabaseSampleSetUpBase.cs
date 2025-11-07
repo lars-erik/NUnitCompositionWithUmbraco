@@ -14,7 +14,7 @@ public abstract class ReusedDatabaseSampleSetUpBase : SeededUmbracoIntegrationSe
     protected override void ConfigureTestDatabaseOptions(ReusedTestDatabaseOptions options)
     {
         options.NeedsNewSeed = _ => Task.FromResult(ReseedTrigger);
-        options.SeedData = async () =>
+        options.SeedData = async (_) =>
         {
             await SeedData();
             ReusedDatabaseIsOnlySeededOnce.SeedCount++;

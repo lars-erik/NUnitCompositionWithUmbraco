@@ -18,7 +18,7 @@ public abstract class TestServerReusedDatabaseSampleSetUpBase() : SeededUmbracoT
     protected override void ConfigureTestDatabaseOptions(ReusedTestDatabaseOptions options)
     {
         options.NeedsNewSeed = _ => Task.FromResult(ReseedTrigger);
-        options.SeedData = async () =>
+        options.SeedData = async (_) =>
         {
             await SeedData();
             TestServerReusedDatabaseIsOnlySeededOnce.SeedCount++;
