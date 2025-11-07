@@ -15,7 +15,7 @@ using Umbraco.Cms.Tests.Common;
 using Umbraco.Cms.Tests.Integration.Implementations;
 using Umbraco.Cms.Tests.Integration.Testing;
 
-namespace UmbracoTestsComposition.ReusedDatabase;
+namespace UmbracoTestsComposition.Common.Database;
 
 public class ReusedTestDatabase : BaseTestDatabase, ITestDatabase
 {

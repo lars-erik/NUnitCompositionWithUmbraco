@@ -1,4 +1,4 @@
-﻿namespace UmbracoTestsComposition.ReusedDatabase;
+﻿namespace UmbracoTestsComposition.Common.Database;
 
 public class ReusedTestDatabaseOptions
 {

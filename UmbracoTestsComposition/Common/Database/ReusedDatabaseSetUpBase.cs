@@ -7,11 +7,10 @@ using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Web;
 using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
-using UmbracoTestsComposition.Common;
 using NUnitComposition.Extensibility;
 using Umbraco.Cms.Infrastructure.Persistence;
 
-namespace UmbracoTestsComposition.ReusedDatabase;
+namespace UmbracoTestsComposition.Common.Database;
 
 [UmbracoTest(
     Database = UmbracoTestOptions.Database.None,
@@ -21,7 +20,7 @@ namespace UmbracoTestsComposition.ReusedDatabase;
 [ExtendableSetUpFixture]
 [OneTimeUmbracoSetUp]
 [ServiceProvider]
-public abstract class ReusedDatabaseSetUpBase : UmbracoIntegrationTest
+public abstract class SeededUmbracoIntegrationTest : UmbracoIntegrationTest
 {
     private TestDbMeta? databaseMeta;
 
@@ -29,7 +28,11 @@ public abstract class ReusedDatabaseSetUpBase : UmbracoIntegrationTest
     {
         base.ConfigureTestServices(services);
 
-        OptionsServiceCollectionExtensions.Configure<ReusedTestDatabaseOptions>(services, ConfigureTestDatabaseOptions);
+        services.Configure<ReusedTestDatabaseOptions>(options =>
+        {
+            options.WorkingDirectory = TestHelper.WorkingDirectory;
+            ConfigureTestDatabaseOptions(options);
+        });
 
         services.AddSingleton<ReusedTestDatabase>();
         services.AddSingleton<ITestDatabase>(sp => sp.GetRequiredService<ReusedTestDatabase>());

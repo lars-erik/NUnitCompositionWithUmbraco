@@ -3,7 +3,7 @@ using NUnit.Framework;
 namespace UmbracoTestsComposition.ReusedDatabase;
 
 [SetUpFixture]
-public class SeededDatabaseFixture
+public class ReusedDatabaseIsOnlySeededOnce
 {
     public static int SeedCount;
 

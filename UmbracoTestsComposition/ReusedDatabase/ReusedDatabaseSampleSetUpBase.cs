@@ -3,25 +3,26 @@ using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Scoping;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Tests.Common.Builders;
+using UmbracoTestsComposition.Common.Database;
 
 namespace UmbracoTestsComposition.ReusedDatabase;
 
-public abstract class ReusedDatabaseSampleSetUp : ReusedDatabaseSetUpBase
+public abstract class ReusedDatabaseSampleSetUpBase : SeededUmbracoIntegrationTest
 {
     protected static bool ReseedTrigger = true;
 
     protected override void ConfigureTestDatabaseOptions(ReusedTestDatabaseOptions options)
     {
-        options.WorkingDirectory = TestHelper.WorkingDirectory;
         options.NeedsNewSeed = () => Task.FromResult(ReseedTrigger);
         options.SeedData = async () =>
         {
             await SeedData();
+            ReusedDatabaseIsOnlySeededOnce.SeedCount++;
             ReseedTrigger = false;
         };
     }
 
-    protected async Task<bool> SeedData()
+    protected async Task SeedData()
     {
         var contentTypeService = Services.GetRequiredService<IContentTypeService>();
         var scopeProvider = Services.GetRequiredService<ICoreScopeProvider>();
@@ -29,15 +30,11 @@ public abstract class ReusedDatabaseSampleSetUp : ReusedDatabaseSetUpBase
         using var scope = scopeProvider.CreateCoreScope(autoComplete: true);
 
         await TestContext.Progress.WriteLineAsync($"[{GetType().Name}] Creating seed document type 'reusedDatabaseDocType'.");
-        var contentType = ContentTypeBuilder.CreateBasicContentType(
-            "reusedDatabaseDocType",
-            "Reused Database Document");
+        var contentType = ContentTypeBuilder.CreateBasicContentType("reusedDatabaseDocType", "Reused Database Document");
         contentType.Key = new("c9e9dd58-7c5f-47fc-9788-78a9b6fbf68d");
         contentType.AllowedAsRoot = true;
 
-        var attempt = await contentTypeService.CreateAsync(
-            contentType,
-            Constants.Security.SuperUserKey);
+        var attempt = await contentTypeService.CreateAsync(contentType, Constants.Security.SuperUserKey);
 
         if (!attempt.Success)
         {
@@ -46,9 +43,5 @@ public abstract class ReusedDatabaseSampleSetUp : ReusedDatabaseSetUpBase
 
         scope.Complete();
         await TestContext.Progress.WriteLineAsync($"[{GetType().Name}] Seed document type created successfully.");
-
-        SeededDatabaseFixture.SeedCount++;
-
-        return true;
     }
 }
