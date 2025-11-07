@@ -8,6 +8,8 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Web;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NUnitComposition.Extensibility;
 using OpenIddict.Abstractions;
@@ -24,33 +26,40 @@ using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Scoping;
 using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
-using Umbraco.Cms.Core.Web;
 using Umbraco.Cms.Infrastructure.Persistence;
 using Umbraco.Cms.Infrastructure.Security;
-using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
 using Umbraco.Cms.Tests.Integration.TestServerTest;
 
 namespace UmbracoTestsComposition.Common.Database;
 
-[UmbracoTest(
-    Database = UmbracoTestOptions.Database.None,
-    Boot = true,
-    Logger = UmbracoTestOptions.Logger.Console
-)]
 [ExtendableSetUpFixture]
 [OneTimeUmbracoSetUp]
 [ServiceProvider]
 public abstract class SeededUmbracoTestServerSetUpBase<TMainController> : UmbracoTestServerTestBase
     where TMainController : ManagementApiControllerBase
 {
+    private readonly bool authorize;
+
     #region Database Setup
+
+    ReusedTestDatabase testDatabase = null!;
 
     private TestDbMeta? databaseMeta;
     public TestDbMeta DatabaseMeta => databaseMeta!;
 
+    private bool ranTestServiceConfig = false;
+    private bool ranCustomTestSetup = false;
+
+    protected SeededUmbracoTestServerSetUpBase(bool authorize = false)
+    {
+        this.authorize = authorize;
+    }
+
     protected override void ConfigureTestServices(IServiceCollection services)
     {
+        ranTestServiceConfig = true;
+
         base.ConfigureTestServices(services);
 
         services.Configure<ReusedTestDatabaseOptions>(options =>
@@ -63,29 +72,48 @@ public abstract class SeededUmbracoTestServerSetUpBase<TMainController> : Umbrac
         services.AddSingleton<ITestDatabase>(sp => sp.GetRequiredService<ReusedTestDatabase>());
 
         services.AddKeyedTransient<HttpClient>("TestServerClient", (_, key) => {
-            AuthenticateClientAsync(Client, "admin@example.com", "adminadminadmin", true).GetAwaiter().GetResult();
+            if (authorize)
+            {
+                // TODO: Check if we have creds for unattended install to use instead.
+                AuthenticateClientAsync(Client, "admin@example.com", "adminadminadmin", true).GetAwaiter().GetResult();
+            }
             return Client;
         });
     }
 
     protected abstract void ConfigureTestDatabaseOptions(ReusedTestDatabaseOptions options);
 
+    protected override void CustomTestSetup(IUmbracoBuilder builder)
+    {
+        ranCustomTestSetup = true;
+
+        var existingFactories = builder.Services.Where(x => x.ServiceType == typeof(IHostedService) && x.ImplementationFactory?.Target == this);
+        builder.Services.Remove(existingFactories.First());
+        builder.Services.AddTransient<IHostedService>(sp => new TestDatabaseHostedLifecycleService(() =>
+        {
+            testDatabase = sp.GetRequiredService<ReusedTestDatabase>();
+            var logger = sp.GetRequiredService<ILogger<SeededUmbracoTestServerSetUpBase<TMainController>>>();
+            logger.LogInformation($"Ensuring reused database");
+            var meta = testDatabase.EnsureDatabase();
+            databaseMeta = meta;
+
+            logger.LogInformation($"Database set up with connection string: {meta.ConnectionString}");
+
+            ConfigureUmbracoDatabase(sp, databaseMeta);
+        }));
+    }
+
+    protected override void CustomTestAuthSetup(IServiceCollection services)
+    {
+        // This is in an awkward method, but it's the best place to validate just before the web app factory is done "booting".
+        if (!ranCustomTestSetup || !ranTestServiceConfig) throw new Exception("base.ConfigureTestServices() and base.CustomTestSetup() must be called when overridden. Otherwise the test database won't be attached.");
+    }
+
     [OneTimeSetUp]
     public async Task EnsureReusedDatabaseAsync()
     {
-        var testDatabase = Services.GetRequiredService<ReusedTestDatabase>();
-        await TestContext.Progress.WriteLineAsync($"[{GetType().Name}] Ensuring reused database...");
-        var meta = testDatabase.EnsureDatabase();
-        databaseMeta = meta;
-
-        await TestContext.Progress.WriteLineAsync($"[{GetType().Name}] Database set up with connection string: {meta.ConnectionString}");
-
-        ConfigureUmbracoDatabase(meta);
-
+        await TestContext.Progress.WriteLineAsync($"[{GetType().Name}] Ensuring seeded database.");
         await testDatabase.EnsureSeeded();
-
-        await TestContext.Progress.WriteLineAsync($"[{GetType().Name}] Bootstrapping Umbraco context.");
-        Services.GetRequiredService<IUmbracoContextFactory>().EnsureUmbracoContext();
     }
 
     [OneTimeTearDown]
@@ -93,24 +121,23 @@ public abstract class SeededUmbracoTestServerSetUpBase<TMainController> : Umbrac
     {
         if (databaseMeta != null)
         {
-            var testDatabase = Services.GetRequiredService<ReusedTestDatabase>();
             TestContext.Progress.WriteLine($"[{GetType().Name}] Detaching reused database.");
             testDatabase.Detach(databaseMeta);
         }
     }
 
-    private void ConfigureUmbracoDatabase(TestDbMeta meta)
+    private void ConfigureUmbracoDatabase(IServiceProvider sp, TestDbMeta meta)
     {
-        var databaseFactory = Services.GetRequiredService<IUmbracoDatabaseFactory>();
-        var connectionStrings = Services.GetRequiredService<IOptionsMonitor<ConnectionStrings>>();
-        var runtimeState = Services.GetRequiredService<IRuntimeState>();
+        var databaseFactory = sp.GetRequiredService<IUmbracoDatabaseFactory>();
+        var connectionStrings = sp.GetRequiredService<IOptionsMonitor<ConnectionStrings>>();
+        var runtimeState = sp.GetRequiredService<IRuntimeState>();
 
         databaseFactory.Configure(meta.ToStronglyTypedConnectionString());
         connectionStrings.CurrentValue.ConnectionString = meta.ConnectionString;
         connectionStrings.CurrentValue.ProviderName = meta.Provider;
 
         runtimeState.DetermineRuntimeLevel();
-        Services.GetRequiredService<IEventAggregator>().Publish(new UnattendedInstallNotification());
+        sp.GetRequiredService<IEventAggregator>().Publish(new UnattendedInstallNotification());
     }
 
     #endregion
@@ -124,11 +151,6 @@ public abstract class SeededUmbracoTestServerSetUpBase<TMainController> : Umbrac
             .Accept
             .Add(new MediaTypeWithQualityHeaderValue(MediaTypeNames.Application.Json));
         return Task.CompletedTask;
-    }
-
-    protected override void CustomTestAuthSetup(IServiceCollection services)
-    {
-        // We do not wanna fake anything, and thereby have protection
     }
 
     protected abstract Expression<Func<TMainController, object>> MethodSelector { get; }

@@ -4,21 +4,20 @@ using Microsoft.Extensions.Options;
 using Moq;
 using System.Data;
 using System.Data.Common;
-using System.IO;
 using Umbraco.Cms.Core.Configuration;
 using Umbraco.Cms.Core.Configuration.Models;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Infrastructure.Migrations.Install;
 using Umbraco.Cms.Infrastructure.Persistence;
-using Umbraco.Cms.Persistence.Sqlite;
 using Umbraco.Cms.Tests.Common;
-using Umbraco.Cms.Tests.Integration.Implementations;
 using Umbraco.Cms.Tests.Integration.Testing;
 
 namespace UmbracoTestsComposition.Common.Database;
 
 public class ReusedTestDatabase : BaseTestDatabase, ITestDatabase
 {
+    private const string FolderName = "reused-databases";
+
     private readonly object syncRoot = new();
     private readonly TestUmbracoDatabaseFactoryProvider databaseFactoryProvider;
     private readonly ILoggerFactory loggerFactory;
@@ -38,13 +37,14 @@ public class ReusedTestDatabase : BaseTestDatabase, ITestDatabase
         this.options = options;
         _databaseFactory = databaseFactoryProvider.Create();
         _loggerFactory = loggerFactory;
+
+        InitializeMetadata();
     }
 
     public TestDbMeta EnsureDatabase()
     {
         lock (syncRoot)
         {
-            Initialize();
             if (ShouldRebuild())
             {
                 RebuildWithSchema();
@@ -56,7 +56,7 @@ public class ReusedTestDatabase : BaseTestDatabase, ITestDatabase
 
     public async Task EnsureSeeded()
     {
-        var shouldSeed = wasRebuilt || await (options?.Value?.NeedsNewSeed?.Invoke() ?? Task.FromResult(false));
+        var shouldSeed = wasRebuilt || await (options?.Value?.NeedsNewSeed?.Invoke(meta!) ?? Task.FromResult(false));
         if (shouldSeed)
         {
             await (options?.Value?.SeedData?.Invoke() ?? Task.CompletedTask);
@@ -82,7 +82,12 @@ public class ReusedTestDatabase : BaseTestDatabase, ITestDatabase
             return;
         }
 
-        var filePath = Path.GetFullPath(Path.Combine(nameof(ReusedDatabase), "reused-database.sqlite"), options.Value.WorkingDirectory);
+        InitializeMetadata();
+    }
+
+    private void InitializeMetadata()
+    {
+        var filePath = Path.GetFullPath(Path.Combine(FolderName, "reused-database.sqlite"), options.Value.WorkingDirectory);
 
         var builder = new SqliteConnectionStringBuilder
         {
@@ -98,7 +103,7 @@ public class ReusedTestDatabase : BaseTestDatabase, ITestDatabase
             name: "ReusedDatabase",
             isEmpty: false,
             connectionString: builder.ConnectionString,
-            providerName: Constants.ProviderName,
+            providerName: global::Umbraco.Cms.Persistence.Sqlite.Constants.ProviderName,
             path: builder.DataSource
         );
     }
@@ -160,6 +165,6 @@ public class ReusedTestDatabase : BaseTestDatabase, ITestDatabase
             return true;
         }
 
-        return options.Value.NeedsNewSeed?.Invoke().GetAwaiter().GetResult() ?? false;
+        return options.Value.NeedsNewSeed?.Invoke(meta!).GetAwaiter().GetResult() ?? false;
     }
 }

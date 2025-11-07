@@ -9,15 +9,15 @@ using UmbracoTestsComposition.Common.Database;
 
 namespace UmbracoTestsComposition.TestServerReusedDatabase;
 
-public abstract class TestServerReusedDatabaseSampleSetUpBase : SeededUmbracoTestServerSetUpBase<BackOfficeController>
+public abstract class TestServerReusedDatabaseSampleSetUpBase() : SeededUmbracoTestServerSetUpBase<BackOfficeController>(true)
 {
     public const string TestDocumentTypeId = "c9e9dd58-7c5f-47fc-9788-78a9b6fbf68d";
     public const string TestDocumentTypeAlias = "reusedDatabaseDocType";
-    protected static bool ReseedTrigger = false;
+    protected static bool ReseedTrigger = true;
 
     protected override void ConfigureTestDatabaseOptions(ReusedTestDatabaseOptions options)
     {
-        options.NeedsNewSeed = () => Task.FromResult(ReseedTrigger);
+        options.NeedsNewSeed = _ => Task.FromResult(ReseedTrigger);
         options.SeedData = async () =>
         {
             await SeedData();

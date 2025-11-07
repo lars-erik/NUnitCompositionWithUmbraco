@@ -1,8 +1,10 @@
-﻿namespace UmbracoTestsComposition.Common.Database;
+﻿using Umbraco.Cms.Tests.Integration.Testing;
+
+namespace UmbracoTestsComposition.Common.Database;
 
 public class ReusedTestDatabaseOptions
 {
-    public Func<Task<bool>>? NeedsNewSeed { get; set; }
+    public Func<TestDbMeta, Task<bool>>? NeedsNewSeed { get; set; }
 
     public Func<Task>? SeedData { get; set; }
 

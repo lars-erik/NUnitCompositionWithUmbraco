@@ -1,14 +1,15 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using NUnitComposition.Extensibility;
 using Umbraco.Cms.Core.Configuration.Models;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Web;
+using Umbraco.Cms.Infrastructure.Persistence;
+using Umbraco.Cms.Tests.Common;
 using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
-using NUnitComposition.Extensibility;
-using Umbraco.Cms.Infrastructure.Persistence;
 
 namespace UmbracoTestsComposition.Common.Database;
 
@@ -20,7 +21,7 @@ namespace UmbracoTestsComposition.Common.Database;
 [ExtendableSetUpFixture]
 [OneTimeUmbracoSetUp]
 [ServiceProvider]
-public abstract class SeededUmbracoIntegrationSetUpBase : UmbracoIntegrationTest
+public abstract class SeededUmbracoIntegrationSetUpBase(bool boot = false) : UmbracoIntegrationTest
 {
     private TestDbMeta? databaseMeta;
 
@@ -36,6 +37,8 @@ public abstract class SeededUmbracoIntegrationSetUpBase : UmbracoIntegrationTest
 
         services.AddSingleton<ReusedTestDatabase>();
         services.AddSingleton<ITestDatabase>(sp => sp.GetRequiredService<ReusedTestDatabase>());
+
+        services.AddUnique<IUmbracoContextAccessor, TestUmbracoContextAccessor>();
     }
 
     protected abstract void ConfigureTestDatabaseOptions(ReusedTestDatabaseOptions options);
@@ -43,7 +46,7 @@ public abstract class SeededUmbracoIntegrationSetUpBase : UmbracoIntegrationTest
     [OneTimeSetUp]
     public async Task EnsureReusedDatabaseAsync()
     {
-        var testDatabase = Services.GetRequiredService<ReusedTestDatabase>();
+        var testDatabase = GetRequiredService<ReusedTestDatabase>();
         await TestContext.Progress.WriteLineAsync($"[{GetType().Name}] Ensuring reused database...");
         var meta = testDatabase.EnsureDatabase();
         databaseMeta = meta;
@@ -52,10 +55,13 @@ public abstract class SeededUmbracoIntegrationSetUpBase : UmbracoIntegrationTest
 
         ConfigureUmbracoDatabase(meta);
 
-        await testDatabase.EnsureSeeded();
+        if (boot)
+        {
+            await TestContext.Progress.WriteLineAsync($"[{GetType().Name}] Bootstrapping Umbraco context.");
+            GetRequiredService<IUmbracoContextFactory>().EnsureUmbracoContext();
+        }
 
-        await TestContext.Progress.WriteLineAsync($"[{GetType().Name}] Bootstrapping Umbraco context.");
-        Services.GetRequiredService<IUmbracoContextFactory>().EnsureUmbracoContext();
+        await testDatabase.EnsureSeeded();
     }
 
     [OneTimeTearDown]
@@ -63,7 +69,7 @@ public abstract class SeededUmbracoIntegrationSetUpBase : UmbracoIntegrationTest
     {
         if (databaseMeta != null)
         {
-            var testDatabase = Services.GetRequiredService<ReusedTestDatabase>();
+            var testDatabase = GetRequiredService<ReusedTestDatabase>();
             TestContext.Progress.WriteLine($"[{GetType().Name}] Detaching reused database.");
             testDatabase.Detach(databaseMeta);
         }
@@ -71,15 +77,15 @@ public abstract class SeededUmbracoIntegrationSetUpBase : UmbracoIntegrationTest
 
     private void ConfigureUmbracoDatabase(TestDbMeta meta)
     {
-        var databaseFactory = Services.GetRequiredService<IUmbracoDatabaseFactory>();
-        var connectionStrings = Services.GetRequiredService<IOptionsMonitor<ConnectionStrings>>();
-        var runtimeState = Services.GetRequiredService<IRuntimeState>();
+        var databaseFactory = GetRequiredService<IUmbracoDatabaseFactory>();
+        var connectionStrings = GetRequiredService<IOptionsMonitor<ConnectionStrings>>();
+        var runtimeState = GetRequiredService<IRuntimeState>();
 
         databaseFactory.Configure(meta.ToStronglyTypedConnectionString());
         connectionStrings.CurrentValue.ConnectionString = meta.ConnectionString;
         connectionStrings.CurrentValue.ProviderName = meta.Provider;
 
         runtimeState.DetermineRuntimeLevel();
-        Services.GetRequiredService<IEventAggregator>().Publish(new UnattendedInstallNotification());
+        GetRequiredService<IEventAggregator>().Publish(new UnattendedInstallNotification());
     }
 }
