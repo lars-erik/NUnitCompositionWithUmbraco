@@ -20,7 +20,7 @@ namespace UmbracoTestsComposition.Common.Database;
 [ExtendableSetUpFixture]
 [OneTimeUmbracoSetUp]
 [ServiceProvider]
-public abstract class SeededUmbracoIntegrationTest : UmbracoIntegrationTest
+public abstract class SeededUmbracoIntegrationSetUpBase : UmbracoIntegrationTest
 {
     private TestDbMeta? databaseMeta;
 

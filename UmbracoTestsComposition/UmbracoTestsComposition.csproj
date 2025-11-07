@@ -32,4 +32,16 @@
     </Content>
   </ItemGroup>
 
+  <PropertyGroup>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <GenerateDepsFile>true</GenerateDepsFile>
+  </PropertyGroup>
+
+  <Target Name="EnsureUmbracoDepsJson" AfterTargets="Build">
+    <Copy
+      SourceFiles="$(OutputPath)$(AssemblyName).deps.json"
+      DestinationFiles="$(OutputPath)Umbraco.Tests.Integration.deps.json"
+      SkipUnchangedFiles="true" />
+  </Target>
+
 </Project>

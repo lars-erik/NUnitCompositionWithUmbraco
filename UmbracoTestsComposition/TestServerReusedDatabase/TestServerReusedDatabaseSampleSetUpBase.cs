@@ -1,15 +1,19 @@
+﻿using System.Linq.Expressions;
 using Microsoft.Extensions.DependencyInjection;
+using Umbraco.Cms.Api.Management.Controllers.Security;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Scoping;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Tests.Common.Builders;
 using UmbracoTestsComposition.Common.Database;
 
-namespace UmbracoTestsComposition.ReusedDatabase;
+namespace UmbracoTestsComposition.TestServerReusedDatabase;
 
-public abstract class ReusedDatabaseSampleSetUpBase : SeededUmbracoIntegrationSetUpBase
+public abstract class TestServerReusedDatabaseSampleSetUpBase : SeededUmbracoTestServerSetUpBase<BackOfficeController>
 {
-    protected static bool ReseedTrigger = true;
+    public const string TestDocumentTypeId = "c9e9dd58-7c5f-47fc-9788-78a9b6fbf68d";
+    public const string TestDocumentTypeAlias = "reusedDatabaseDocType";
+    protected static bool ReseedTrigger = false;
 
     protected override void ConfigureTestDatabaseOptions(ReusedTestDatabaseOptions options)
     {
@@ -17,7 +21,7 @@ public abstract class ReusedDatabaseSampleSetUpBase : SeededUmbracoIntegrationSe
         options.SeedData = async () =>
         {
             await SeedData();
-            ReusedDatabaseIsOnlySeededOnce.SeedCount++;
+            TestServerReusedDatabaseIsOnlySeededOnce.SeedCount++;
             ReseedTrigger = false;
         };
     }
@@ -30,8 +34,8 @@ public abstract class ReusedDatabaseSampleSetUpBase : SeededUmbracoIntegrationSe
         using var scope = scopeProvider.CreateCoreScope(autoComplete: true);
 
         await TestContext.Progress.WriteLineAsync($"[{GetType().Name}] Creating seed document type 'reusedDatabaseDocType'.");
-        var contentType = ContentTypeBuilder.CreateBasicContentType("reusedDatabaseDocType", "Reused Database Document");
-        contentType.Key = new("c9e9dd58-7c5f-47fc-9788-78a9b6fbf68d");
+        var contentType = ContentTypeBuilder.CreateBasicContentType(TestDocumentTypeAlias, "Reused Database Document");
+        contentType.Key = new(TestDocumentTypeId);
         contentType.AllowedAsRoot = true;
 
         var attempt = await contentTypeService.CreateAsync(contentType, Constants.Security.SuperUserKey);
@@ -44,4 +48,6 @@ public abstract class ReusedDatabaseSampleSetUpBase : SeededUmbracoIntegrationSe
         scope.Complete();
         await TestContext.Progress.WriteLineAsync($"[{GetType().Name}] Seed document type created successfully.");
     }
+
+    protected override Expression<Func<BackOfficeController, object>> MethodSelector => x => x.Token();
 }
