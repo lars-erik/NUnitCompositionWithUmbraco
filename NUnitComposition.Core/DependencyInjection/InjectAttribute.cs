@@ -92,6 +92,7 @@ public class InjectAttribute : Attribute, ITestAction
 
     public void AfterTest(ITest test)
     {
+        var currentContextTest = TestExecutionContext.CurrentContext.CurrentTest;
     }
 
     public ActionTargets Targets => ActionTargets.Suite;

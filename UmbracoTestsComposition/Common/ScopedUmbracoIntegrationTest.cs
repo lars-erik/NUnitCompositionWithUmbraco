@@ -1,4 +1,5 @@
-﻿using NUnitComposition.Extensibility;
+﻿using Microsoft.Extensions.Logging;
+using NUnitComposition.Extensibility;
 using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
 

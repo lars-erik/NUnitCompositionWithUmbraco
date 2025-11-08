@@ -2,8 +2,6 @@ using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
-using System.Data;
-using System.Data.Common;
 using Umbraco.Cms.Core.Configuration;
 using Umbraco.Cms.Core.Configuration.Models;
 using Umbraco.Cms.Core.Events;
@@ -14,16 +12,16 @@ using Umbraco.Cms.Tests.Integration.Testing;
 
 namespace UmbracoTestsComposition.Common.Database;
 
-public class ReusedTestDatabase : BaseTestDatabase, ITestDatabase
+public class ReusedTestDatabase : ITestDatabase
 {
     private const string FolderName = "reused-databases";
 
-    private readonly object syncRoot = new();
+    private readonly Lock lockObj = new();
     private readonly TestUmbracoDatabaseFactoryProvider databaseFactoryProvider;
     private readonly ILoggerFactory loggerFactory;
     private readonly IOptions<ReusedTestDatabaseOptions> options;
     private TestDbMeta? meta;
-    private bool wasRebuilt = false;
+    private bool wasRebuilt;
 
     public ReusedTestDatabase
     (
@@ -33,17 +31,15 @@ public class ReusedTestDatabase : BaseTestDatabase, ITestDatabase
     )
     {
         this.databaseFactoryProvider = databaseFactoryProvider;
-        this.loggerFactory = loggerFactory;
         this.options = options;
-        _databaseFactory = databaseFactoryProvider.Create();
-        _loggerFactory = loggerFactory;
+        this.loggerFactory = loggerFactory;
 
         InitializeMetadata();
     }
 
     public TestDbMeta EnsureDatabase()
     {
-        lock (syncRoot)
+        lock (lockObj)
         {
             if (ShouldRebuild())
             {
@@ -63,27 +59,11 @@ public class ReusedTestDatabase : BaseTestDatabase, ITestDatabase
         }
     }
 
-    public override TestDbMeta AttachEmpty() => AttachSchema();
+    public TestDbMeta AttachEmpty() => AttachSchema();
 
-    public override TestDbMeta AttachSchema()
-    {
-        return EnsureDatabase();
-    }
+    public TestDbMeta AttachSchema() => EnsureDatabase();
 
-    public override void Detach(TestDbMeta id)
-    {
-        // File based SQLite database is reused between tests.
-    }
-
-    protected override void Initialize()
-    {
-        if (meta != null)
-        {
-            return;
-        }
-
-        InitializeMetadata();
-    }
+    public void Detach(TestDbMeta id) { }
 
     private void InitializeMetadata()
     {
@@ -108,31 +88,18 @@ public class ReusedTestDatabase : BaseTestDatabase, ITestDatabase
         );
     }
 
-    protected override DbConnection GetConnection(TestDbMeta meta) => new SqliteConnection(meta.ConnectionString);
-
-    protected override void RebuildSchema(IDbCommand command, TestDbMeta meta)
-    {
-        // Schema rebuilding handled by RebuildDatabaseFile. The base implementation is unused for this database.
-    }
-
-    protected override void ResetTestDatabase(TestDbMeta meta)
-    {
-        // Reset is not required as we reuse the same file between runs.
-    }
-
-    public override void TearDown()
-    {
-        // Nothing to dispose. The database file is intentionally preserved between runs.
-    }
-
     private void RebuildWithSchema()
     {
         var databaseDirectory = Path.GetDirectoryName(meta!.Path)!;
         var databasePath = meta.Path!;
-        Directory.CreateDirectory(databaseDirectory);
-        if (File.Exists(databasePath))
+
+        lock (lockObj)
         {
-            File.Delete(databasePath);
+            Directory.CreateDirectory(databaseDirectory);
+            if (File.Exists(databasePath))
+            {
+                File.Delete(databasePath);
+            }
         }
 
         var dbFactory = databaseFactoryProvider.Create();

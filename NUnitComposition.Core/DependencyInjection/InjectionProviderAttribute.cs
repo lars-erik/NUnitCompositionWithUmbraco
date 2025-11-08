@@ -29,6 +29,7 @@ public class InjectionProviderAttribute : Attribute, IApplyToTest
         
         test.Properties.Add(FactoryProperty, factoryFunction);
 
-        TestExecutionContext.CurrentContext.CurrentTest.Properties.Add(FactoryProperty, factoryFunction);
+        var contextCurrentTest = TestExecutionContext.CurrentContext.CurrentTest;
+        contextCurrentTest.Properties.Add(FactoryProperty, factoryFunction);
     }
 }
