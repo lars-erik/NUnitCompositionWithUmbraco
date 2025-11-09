@@ -6,4 +6,5 @@ public interface IReusableTestDatabase : ITestDatabase
 {
     TestDbMeta EnsureDatabase();
     Task EnsureSeeded(IServiceProvider serviceProvider);
+    Task RestoreSnapshot();
 }

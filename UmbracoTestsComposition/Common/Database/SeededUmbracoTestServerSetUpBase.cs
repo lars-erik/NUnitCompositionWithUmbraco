@@ -40,8 +40,7 @@ namespace UmbracoTestsComposition.Common.Database;
 [ExtendableSetUpFixture]
 [OneTimeUmbracoSetUp]
 [ServiceProvider]
-public abstract class SeededUmbracoTestServerSetUpBase<TMainController> : UmbracoTestServerTestBase
-    where TMainController : ManagementApiControllerBase
+public abstract class SeededUmbracoTestServerSetUpBase<TMainController> : UmbracoTestServerTestBase, IBackofficeClientAuthenticator where TMainController : ManagementApiControllerBase
 {
     private readonly bool authorize;
 
@@ -75,6 +74,7 @@ public abstract class SeededUmbracoTestServerSetUpBase<TMainController> : Umbrac
         services.AddSingleton(typeof(IReusableTestDatabase), sp => sp.CreateInstance(sp.GetRequiredService<IOptions<ReusedTestDatabaseOptions>>().Value.DatabaseType));
         services.AddSingleton<ITestDatabase>(sp => sp.GetRequiredService<IReusableTestDatabase>());
 
+        services.AddSingleton<IBackofficeClientAuthenticator>(this);
         services.AddKeyedTransient<HttpClient>("TestServerClient", (_, key) => {
             if (authorize)
             {
@@ -175,7 +175,7 @@ public abstract class SeededUmbracoTestServerSetUpBase<TMainController> : Umbrac
 
     protected virtual string Url => GetManagementApiUrl(MethodSelector);
 
-    protected async Task AuthenticateClientAsync(HttpClient client, string username, string password, bool isAdmin) =>
+    public async Task AuthenticateClientAsync(HttpClient client, string username, string password, bool isAdmin) =>
         await AuthenticateClientAsync(client,
             async userService =>
             {
@@ -206,10 +206,9 @@ public abstract class SeededUmbracoTestServerSetUpBase<TMainController> : Umbrac
 
     protected async Task AuthenticateClientAsync(HttpClient client, Func<IUserService, Task<(IUser user, string Password)>> createUser)
     {
-
-        OpenIddictApplicationDescriptor backofficeOpenIddictApplicationDescriptor;
         var scopeProvider = GetRequiredService<ICoreScopeProvider>();
 
+        OpenIddictApplicationDescriptor backofficeOpenIddictApplicationDescriptor;
         string? username;
         string? password;
 

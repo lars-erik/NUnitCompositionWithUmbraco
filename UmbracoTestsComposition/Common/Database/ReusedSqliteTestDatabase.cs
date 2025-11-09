@@ -1,13 +1,17 @@
-using System.Data;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
+using OpenIddict.Abstractions;
+using System.Data;
+using Umbraco.Cms.Api.Management.Security;
 using Umbraco.Cms.Core.Configuration;
 using Umbraco.Cms.Core.Configuration.Models;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Infrastructure.Migrations.Install;
 using Umbraco.Cms.Infrastructure.Persistence;
+using Umbraco.Cms.Infrastructure.Security;
 using Umbraco.Cms.Tests.Common;
 using Umbraco.Cms.Tests.Integration.Testing;
 
@@ -49,28 +53,48 @@ public class ReusedSqliteTestDatabase : IReusableTestDatabase
             }
             else
             {
-                TestContext.Progress.WriteLine("Restoring from snapshot");
-                File.Copy(meta!.Path.Replace(".sqlite", "-snapshot.sqlite"), meta!.Path, overwrite: true);
+                RestoreSnapshot().GetAwaiter().GetResult();
             }
 
             return meta!;
         }
     }
 
+    public async Task RestoreSnapshot()
+    {
+        await TestContext.Progress.WriteLineAsync("Restoring from snapshot");
+        File.Copy(meta!.Path.Replace(".sqlite", "-snapshot.sqlite"), meta!.Path, overwrite: true);
+    }
+
     public async Task EnsureSeeded(IServiceProvider serviceProvider)
     {
         var shouldSeed = wasRebuilt || await (options?.Value?.NeedsNewSeed?.Invoke(meta!) ?? Task.FromResult(false));
+
         if (shouldSeed)
         {
-            TestContext.Progress.WriteLine("Seeding database");
+            await TestContext.Progress.WriteLineAsync("Seeding database");
+
+            using (var scope = serviceProvider.CreateScope())
+            {
+                var openIdDictManager = scope.ServiceProvider.GetService<IOpenIddictApplicationManager?>();
+                if (openIdDictManager != null)
+                {
+                    var initializer = scope.ServiceProvider.GetService<IBackOfficeApplicationManager>();
+                    if (initializer != null)
+                    {
+                        await initializer.EnsureBackOfficeApplicationAsync([new Uri("https://localhost")]);
+                    }
+                }
+            }
+
             await (options?.Value?.SeedData?.Invoke(serviceProvider) ?? Task.CompletedTask);
-            
-            TestContext.Progress.WriteLine("Writing snapshot");
-            var snapshotPath = meta.Path!.Replace(".sqlite", "-snapshot.sqlite");
+
+            await TestContext.Progress.WriteLineAsync("Writing snapshot");
+            var snapshotPath = meta!.Path!.Replace(".sqlite", "-snapshot.sqlite");
             var dbFactory = databaseFactoryProvider.Create();
             dbFactory.Configure(meta!.ToStronglyTypedConnectionString());
             using var database = (UmbracoDatabase)dbFactory.CreateDatabase();
-            database.Execute($"VACUUM INTO '{snapshotPath}';");
+            await database.ExecuteAsync($"VACUUM INTO '{snapshotPath}';");
         }
     }
 

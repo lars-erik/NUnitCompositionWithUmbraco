@@ -1,14 +1,17 @@
-﻿using System.Diagnostics;
+﻿using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
+using OpenIddict.Abstractions;
+using System.Diagnostics;
 using System.Reflection;
-using Microsoft.Data.SqlClient;
 using Umbraco.Cms.Core.Configuration;
 using Umbraco.Cms.Core.Configuration.Models;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Infrastructure.Migrations.Install;
 using Umbraco.Cms.Infrastructure.Persistence;
+using Umbraco.Cms.Infrastructure.Security;
 using Umbraco.Cms.Tests.Common;
 using Umbraco.Cms.Tests.Integration.Testing;
 using static Umbraco.Cms.Infrastructure.Persistence.UmbracoDatabase;
@@ -65,6 +68,19 @@ public class ReusedSqlServerTestDatabase : IReusableTestDatabase
         var shouldSeed = wasRebuilt || await (options.NeedsNewSeed?.Invoke(meta!) ?? Task.FromResult(false));
         if (shouldSeed)
         {
+            using (var scope = serviceProvider.CreateScope())
+            {
+                var openIdDictManager = scope.ServiceProvider.GetService<IOpenIddictApplicationManager?>();
+                if (openIdDictManager != null)
+                {
+                    var initializer = scope.ServiceProvider.GetService<IBackOfficeApplicationManager>();
+                    if (initializer != null)
+                    {
+                        await initializer.EnsureBackOfficeApplicationAsync([new Uri("https://localhost")]);
+                    }
+                }
+            }
+
             await (options.SeedData?.Invoke(serviceProvider) ?? Task.CompletedTask);
 
             await CreateSnapshot();
@@ -97,7 +113,7 @@ public class ReusedSqlServerTestDatabase : IReusableTestDatabase
         await TestContext.Progress.WriteLineAsync($"Snapshot created {watch.Elapsed}");
     }
 
-    private async Task RestoreSnapshot()
+    public async Task RestoreSnapshot()
     {
         var watch = new Stopwatch();
         watch.Start();

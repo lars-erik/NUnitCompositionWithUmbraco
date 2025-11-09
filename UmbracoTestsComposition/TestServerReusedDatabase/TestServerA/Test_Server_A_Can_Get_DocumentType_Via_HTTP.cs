@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using NUnitComposition.DependencyInjection;
 using Umbraco.Cms.Api.Management.ViewModels.DocumentType;
+using UmbracoTestsComposition.Common.Database;
 
 namespace UmbracoTestsComposition.TestServerReusedDatabase.TestServerA;
 
@@ -10,10 +11,23 @@ namespace UmbracoTestsComposition.TestServerReusedDatabase.TestServerA;
 public class Test_Server_A_Can_Get_DocumentType_Via_HTTP
 {
     private HttpClient client = null!;
+    private IServiceProvider provider;
 
     public void Inject(IServiceProvider provider)
     {
+        this.provider = provider;
+    }
+
+    [SetUp]
+    public void SetUp()
+    {
         client = provider.GetKeyedService<HttpClient>("TestServerClient")!;
+    }
+
+    [TearDown]
+    public async Task TearDown()
+    {
+        await provider.GetRequiredService<IReusableTestDatabase>().RestoreSnapshot();
     }
 
     [Test]
@@ -28,7 +42,7 @@ public class Test_Server_A_Can_Get_DocumentType_Via_HTTP
     }
 
     [Test]
-    public async Task Write_And_Hope_It_Is_Rolled_Back()
+    public async Task Update_It_And_Read_Updated_Data()
     {
         var updateModel = new UpdateDocumentTypeRequestModel
         {

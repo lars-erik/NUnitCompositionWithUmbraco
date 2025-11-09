@@ -9,16 +9,18 @@ public class InjectAttribute : Attribute, ITestAction
 {
     private readonly string injectionMethodName;
     private readonly string? setUpAfterInjection;
+    private readonly bool beforeEach;
 
-    public InjectAttribute(string injectionMethod, string? setUpAfterInjection = null)
+    public InjectAttribute(string injectionMethod, string? setUpAfterInjection = null, bool beforeEach = false)
     {
         this.injectionMethodName = injectionMethod;
         this.setUpAfterInjection = setUpAfterInjection;
+        this.beforeEach = beforeEach;
     }
 
     public void BeforeTest(ITest test)
     {
-        if (!test.IsSuite || test.Fixture == null)
+        if (!beforeEach && (!test.IsSuite || test.Fixture == null))
         {
             // TODO: Log or throw?
             return;
@@ -95,5 +97,5 @@ public class InjectAttribute : Attribute, ITestAction
         var currentContextTest = TestExecutionContext.CurrentContext.CurrentTest;
     }
 
-    public ActionTargets Targets => ActionTargets.Suite;
+    public ActionTargets Targets => ActionTargets.Suite | ActionTargets.Test;
 }

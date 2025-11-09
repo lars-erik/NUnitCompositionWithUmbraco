@@ -48,6 +48,7 @@ public abstract class TestServerReusedDatabaseSampleSetUpBase() : SeededUmbracoT
         }
 
         scope.Complete();
+
         await TestContext.Progress.WriteLineAsync($"[{GetType().Name}] Seed document type created successfully.");
     }
 
