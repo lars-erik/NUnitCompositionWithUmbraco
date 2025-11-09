@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NUnitComposition.Extensibility;
@@ -30,13 +31,27 @@ public abstract class SeededUmbracoIntegrationSetUpBase(bool boot = false) : Umb
     {
         base.ConfigureTestServices(services);
 
+        var settings = new TestDatabaseSettings
+        {
+            FilesPath = Path.Combine(TestHelper.WorkingDirectory, "databases"),
+        };
+        Configuration.Bind("Tests:Database", settings);
+        services.AddSingleton(settings);
+
         services.Configure<ReusedTestDatabaseOptions>(options =>
         {
             options.WorkingDirectory = TestHelper.WorkingDirectory;
             ConfigureTestDatabaseOptions(options);
         });
 
-        services.AddSingleton(typeof(IReusableTestDatabase), sp => sp.CreateInstance(sp.GetRequiredService<IOptions<ReusedTestDatabaseOptions>>().Value.DatabaseType));
+        var databaseType = settings.DatabaseType switch
+        {
+            TestDatabaseSettings.TestDatabaseType.Sqlite => typeof(ReusedSqliteTestDatabase),
+            TestDatabaseSettings.TestDatabaseType.SqlServer => typeof(ReusedSqlServerTestDatabase),
+            _ => throw new Exception($"Reusable test database implementation for {settings.DatabaseType} not found.")
+        };
+
+        services.AddSingleton(typeof(IReusableTestDatabase), sp => sp.CreateInstance(databaseType));
         services.AddSingleton<ITestDatabase>(sp => sp.GetRequiredService<IReusableTestDatabase>());
 
 

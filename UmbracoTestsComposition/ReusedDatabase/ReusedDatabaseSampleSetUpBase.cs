@@ -14,7 +14,6 @@ public abstract class ReusedDatabaseSampleSetUpBase : SeededUmbracoIntegrationSe
 
     protected override void ConfigureTestDatabaseOptions(ReusedTestDatabaseOptions options)
     {
-        options.DatabaseType = typeof(ReusedSqliteTestDatabase);
         options.NeedsNewSeed = _ => Task.FromResult(ReseedTrigger);
         options.SeedData = async (_) =>
         {

@@ -17,8 +17,6 @@ public abstract class TestServerReusedDatabaseSampleSetUpBase() : SeededUmbracoT
 
     protected override void ConfigureTestDatabaseOptions(ReusedTestDatabaseOptions options)
     {
-        // TODO: Let's fixture up and add the type here instead, then run both SQL Server and SQLite tests
-        options.DatabaseType = typeof(ReusedSqliteTestDatabase);
         options.NeedsNewSeed = _ => Task.FromResult(ReseedTrigger);
         options.SeedData = async (_) =>
         {
@@ -51,6 +49,4 @@ public abstract class TestServerReusedDatabaseSampleSetUpBase() : SeededUmbracoT
 
         await TestContext.Progress.WriteLineAsync($"[{GetType().Name}] Seed document type created successfully.");
     }
-
-    protected override Expression<Func<BackOfficeController, object>> MethodSelector => x => x.Token();
 }

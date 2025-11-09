@@ -9,5 +9,4 @@ public class ReusedTestDatabaseOptions
     public Func<IServiceProvider, Task>? SeedData { get; set; }
 
     public string WorkingDirectory { get; set; } = null!;
-    public Type DatabaseType { get; set; } = null!;
 }

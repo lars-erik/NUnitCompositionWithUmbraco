@@ -65,13 +65,27 @@ public abstract class SeededUmbracoTestServerSetUpBase<TMainController> : Umbrac
 
         base.ConfigureTestServices(services);
 
+        var settings = new TestDatabaseSettings
+        {
+            FilesPath = Path.Combine(TestHelper.WorkingDirectory, "databases"),
+        };
+        Configuration.Bind("Tests:Database", settings);
+        services.AddSingleton(settings);
+
         services.Configure<ReusedTestDatabaseOptions>(options =>
         {
             options.WorkingDirectory = TestHelper.WorkingDirectory;
             ConfigureTestDatabaseOptions(options);
         });
-        
-        services.AddSingleton(typeof(IReusableTestDatabase), sp => sp.CreateInstance(sp.GetRequiredService<IOptions<ReusedTestDatabaseOptions>>().Value.DatabaseType));
+
+        var databaseType = settings.DatabaseType switch
+        {
+            TestDatabaseSettings.TestDatabaseType.Sqlite => typeof(ReusedSqliteTestDatabase),
+            TestDatabaseSettings.TestDatabaseType.SqlServer => typeof(ReusedSqlServerTestDatabase),
+            _ => throw new Exception($"Reusable test database implementation for {settings.DatabaseType} not found.")
+        };
+
+        services.AddSingleton(typeof(IReusableTestDatabase), sp => sp.CreateInstance(databaseType));
         services.AddSingleton<ITestDatabase>(sp => sp.GetRequiredService<IReusableTestDatabase>());
 
         services.AddSingleton<IBackofficeClientAuthenticator>(this);
@@ -83,20 +97,6 @@ public abstract class SeededUmbracoTestServerSetUpBase<TMainController> : Umbrac
             }
             return Client;
         });
-
-        var settings = new TestDatabaseSettings
-        {
-            FilesPath = Path.Combine(TestHelper.WorkingDirectory, "databases"),
-            DatabaseType =
-                Configuration.GetValue<TestDatabaseSettings.TestDatabaseType>("Tests:Database:DatabaseType"),
-            PrepareThreadCount = Configuration.GetValue<int>("Tests:Database:PrepareThreadCount"),
-            EmptyDatabasesCount = Configuration.GetValue<int>("Tests:Database:EmptyDatabasesCount"),
-            SchemaDatabaseCount = Configuration.GetValue<int>("Tests:Database:SchemaDatabaseCount"),
-            SQLServerMasterConnectionString =
-                Configuration.GetValue<string>("Tests:Database:SQLServerMasterConnectionString")
-        };
-        services.AddSingleton(settings);
-
     }
 
     protected abstract void ConfigureTestDatabaseOptions(ReusedTestDatabaseOptions options);
