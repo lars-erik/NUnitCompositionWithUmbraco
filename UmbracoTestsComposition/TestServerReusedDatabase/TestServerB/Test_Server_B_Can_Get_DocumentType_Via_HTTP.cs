@@ -23,5 +23,7 @@ public class Test_Server_B_Can_Get_DocumentType_Via_HTTP
         var jsonObject = await JsonNode.ParseAsync(json);
         jsonObject!.AsObject().TryGetPropertyValue("alias", out var aliasNode);
         Assert.That(aliasNode?.GetValue<string>(), Is.EqualTo(TestServerReusedDatabaseSampleSetUpBase.TestDocumentTypeAlias));
+
+        Assert.That(jsonObject["name"]!.GetValue<string>(), Is.EqualTo("Reused Database Document"));
     }
 }

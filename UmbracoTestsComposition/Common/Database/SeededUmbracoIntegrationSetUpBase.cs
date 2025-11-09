@@ -13,6 +13,11 @@ using Umbraco.Cms.Tests.Integration.Testing;
 
 namespace UmbracoTestsComposition.Common.Database;
 
+public abstract class SeededUmbracoIntegrationSetUpBase(bool boot = false)
+    : SeededUmbracoIntegrationSetUpBase<ReusedSqliteTestDatabase>(boot)
+{
+}
+
 [UmbracoTest(
     Database = UmbracoTestOptions.Database.None,
     Boot = false,
@@ -21,7 +26,8 @@ namespace UmbracoTestsComposition.Common.Database;
 [ExtendableSetUpFixture]
 [OneTimeUmbracoSetUp]
 [ServiceProvider]
-public abstract class SeededUmbracoIntegrationSetUpBase(bool boot = false) : UmbracoIntegrationTest
+public abstract class SeededUmbracoIntegrationSetUpBase<TDatabase>(bool boot = false) : UmbracoIntegrationTest
+    where TDatabase : class, IReusableTestDatabase
 {
     private TestDbMeta? databaseMeta;
 
@@ -35,8 +41,8 @@ public abstract class SeededUmbracoIntegrationSetUpBase(bool boot = false) : Umb
             ConfigureTestDatabaseOptions(options);
         });
 
-        services.AddSingleton<ReusedTestDatabase>();
-        services.AddSingleton<ITestDatabase>(sp => sp.GetRequiredService<ReusedTestDatabase>());
+        services.AddSingleton<TDatabase>();
+        services.AddSingleton<ITestDatabase>(sp => sp.GetRequiredService<TDatabase>());
 
         services.AddUnique<IUmbracoContextAccessor, TestUmbracoContextAccessor>();
     }
@@ -46,7 +52,7 @@ public abstract class SeededUmbracoIntegrationSetUpBase(bool boot = false) : Umb
     [OneTimeSetUp]
     public async Task EnsureReusedDatabaseAsync()
     {
-        var testDatabase = GetRequiredService<ReusedTestDatabase>();
+        var testDatabase = GetRequiredService<TDatabase>();
         await TestContext.Progress.WriteLineAsync($"[{GetType().Name}] Ensuring reused database...");
         var meta = testDatabase.EnsureDatabase();
         databaseMeta = meta;
@@ -69,7 +75,7 @@ public abstract class SeededUmbracoIntegrationSetUpBase(bool boot = false) : Umb
     {
         if (databaseMeta != null)
         {
-            var testDatabase = GetRequiredService<ReusedTestDatabase>();
+            var testDatabase = GetRequiredService<ReusedSqliteTestDatabase>();
             TestContext.Progress.WriteLine($"[{GetType().Name}] Detaching reused database.");
             testDatabase.Detach(databaseMeta);
         }

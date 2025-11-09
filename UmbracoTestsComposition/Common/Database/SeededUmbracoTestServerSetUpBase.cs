@@ -1,4 +1,12 @@
-﻿using System.Linq.Expressions;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using NUnitComposition.Extensibility;
+using OpenIddict.Abstractions;
+using System.Data;
+using System.Linq.Expressions;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -7,16 +15,11 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Web;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using NUnitComposition.Extensibility;
-using OpenIddict.Abstractions;
 using Umbraco.Cms.Api.Management.Controllers;
 using Umbraco.Cms.Api.Management.Controllers.Security;
 using Umbraco.Cms.Api.Management.Security;
 using Umbraco.Cms.Api.Management.ViewModels.Security;
+using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Configuration.Models;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Extensions;
@@ -30,20 +33,28 @@ using Umbraco.Cms.Infrastructure.Persistence;
 using Umbraco.Cms.Infrastructure.Security;
 using Umbraco.Cms.Tests.Integration.Testing;
 using Umbraco.Cms.Tests.Integration.TestServerTest;
+using static NPoco.SqlBuilder;
 
 namespace UmbracoTestsComposition.Common.Database;
+
+public abstract class SeededUmbracoTestServerSetUpBase<TMainController>(bool authorize = false) : SeededUmbracoTestServerSetUpBase<TMainController, ReusedSqliteTestDatabase>(authorize)
+    where TMainController : ManagementApiControllerBase
+{
+}
+
 
 [ExtendableSetUpFixture]
 [OneTimeUmbracoSetUp]
 [ServiceProvider]
-public abstract class SeededUmbracoTestServerSetUpBase<TMainController> : UmbracoTestServerTestBase
+public abstract class SeededUmbracoTestServerSetUpBase<TMainController, TTestDatabase> : UmbracoTestServerTestBase
     where TMainController : ManagementApiControllerBase
+    where TTestDatabase : class, IReusableTestDatabase
 {
     private readonly bool authorize;
 
     #region Database Setup
 
-    ReusedTestDatabase testDatabase = null!;
+    TTestDatabase testDatabase = null!;
 
     private TestDbMeta? databaseMeta;
     public TestDbMeta DatabaseMeta => databaseMeta!;
@@ -68,8 +79,8 @@ public abstract class SeededUmbracoTestServerSetUpBase<TMainController> : Umbrac
             ConfigureTestDatabaseOptions(options);
         });
 
-        services.AddSingleton<ReusedTestDatabase>();
-        services.AddSingleton<ITestDatabase>(sp => sp.GetRequiredService<ReusedTestDatabase>());
+        services.AddSingleton<TTestDatabase>();
+        services.AddSingleton<ITestDatabase>(sp => sp.GetRequiredService<TTestDatabase>());
 
         services.AddKeyedTransient<HttpClient>("TestServerClient", (_, key) => {
             if (authorize)
@@ -79,6 +90,20 @@ public abstract class SeededUmbracoTestServerSetUpBase<TMainController> : Umbrac
             }
             return Client;
         });
+
+        var settings = new TestDatabaseSettings
+        {
+            FilesPath = Path.Combine(TestHelper.WorkingDirectory, "databases"),
+            DatabaseType =
+                Configuration.GetValue<TestDatabaseSettings.TestDatabaseType>("Tests:Database:DatabaseType"),
+            PrepareThreadCount = Configuration.GetValue<int>("Tests:Database:PrepareThreadCount"),
+            EmptyDatabasesCount = Configuration.GetValue<int>("Tests:Database:EmptyDatabasesCount"),
+            SchemaDatabaseCount = Configuration.GetValue<int>("Tests:Database:SchemaDatabaseCount"),
+            SQLServerMasterConnectionString =
+                Configuration.GetValue<string>("Tests:Database:SQLServerMasterConnectionString")
+        };
+        services.AddSingleton(settings);
+
     }
 
     protected abstract void ConfigureTestDatabaseOptions(ReusedTestDatabaseOptions options);
@@ -91,8 +116,8 @@ public abstract class SeededUmbracoTestServerSetUpBase<TMainController> : Umbrac
         builder.Services.Remove(existingFactories.First());
         builder.Services.AddTransient<IHostedService>(sp => new TestDatabaseHostedLifecycleService(() =>
         {
-            testDatabase = sp.GetRequiredService<ReusedTestDatabase>();
-            var logger = sp.GetRequiredService<ILogger<SeededUmbracoTestServerSetUpBase<TMainController>>>();
+            testDatabase = sp.GetRequiredService<TTestDatabase>();
+            var logger = sp.GetRequiredService<ILogger<SeededUmbracoTestServerSetUpBase<TMainController, TTestDatabase>>>();
             logger.LogInformation($"Ensuring reused database");
             var meta = testDatabase.EnsureDatabase();
             databaseMeta = meta;
@@ -207,8 +232,7 @@ public abstract class SeededUmbracoTestServerSetUpBase<TMainController> : Umbrac
             var userKey = userCreationResult.user.Key;
 
             var token = await userManager.GeneratePasswordResetTokenAsync(userCreationResult.user);
-
-
+            
             var changePasswordAttempt = await userService.ChangePasswordAsync(userKey,
                 new ChangeUserPasswordModel
                 {
@@ -233,8 +257,10 @@ public abstract class SeededUmbracoTestServerSetUpBase<TMainController> : Umbrac
         var loginModel = new LoginRequestModel { Username = username, Password = password };
 
         // Login to ensure the cookie is set (used in next request)
-        var loginResponse = await client.PostAsync(
-            GetManagementApiUrl<BackOfficeController>(x => x.Login(CancellationToken.None, null)), JsonContent.Create(loginModel));
+        var loginUrl = 
+            //$"/umbraco/management/api/v1/security/back-office/login";
+            GetManagementApiUrl<BackOfficeController>(x => x.Login(CancellationToken.None, loginModel));
+        var loginResponse = await client.PostAsync(loginUrl, JsonContent.Create(loginModel));
 
         Assert.AreEqual(HttpStatusCode.OK, loginResponse.StatusCode, await loginResponse.Content.ReadAsStringAsync());
 

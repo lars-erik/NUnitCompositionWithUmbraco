@@ -9,7 +9,7 @@ using UmbracoTestsComposition.Common.Database;
 
 namespace UmbracoTestsComposition.TestServerReusedDatabase;
 
-public abstract class TestServerReusedDatabaseSampleSetUpBase() : SeededUmbracoTestServerSetUpBase<BackOfficeController>(true)
+public abstract class TestServerReusedDatabaseSampleSetUpBase() : SeededUmbracoTestServerSetUpBase<BackOfficeController, ReusedSqlServerTestDatabase>(true)
 {
     public const string TestDocumentTypeId = "c9e9dd58-7c5f-47fc-9788-78a9b6fbf68d";
     public const string TestDocumentTypeAlias = "reusedDatabaseDocType";

@@ -12,7 +12,7 @@ using Umbraco.Cms.Tests.Integration.Testing;
 
 namespace UmbracoTestsComposition.Common.Database;
 
-public class ReusedTestDatabase : ITestDatabase
+public class ReusedSqliteTestDatabase : IReusableTestDatabase
 {
     private const string FolderName = "reused-databases";
 
@@ -23,7 +23,7 @@ public class ReusedTestDatabase : ITestDatabase
     private TestDbMeta? meta;
     private bool wasRebuilt;
 
-    public ReusedTestDatabase
+    public ReusedSqliteTestDatabase
     (
         TestUmbracoDatabaseFactoryProvider databaseFactoryProvider,
         ILoggerFactory loggerFactory,
