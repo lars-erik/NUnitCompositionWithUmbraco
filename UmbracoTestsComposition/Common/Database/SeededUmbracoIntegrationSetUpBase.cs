@@ -46,8 +46,8 @@ public abstract class SeededUmbracoIntegrationSetUpBase(bool boot = false) : Umb
 
         var databaseType = settings.DatabaseType switch
         {
-            TestDatabaseSettings.TestDatabaseType.Sqlite => typeof(ReusedSqliteTestDatabase),
-            TestDatabaseSettings.TestDatabaseType.SqlServer => typeof(ReusedSqlServerTestDatabase),
+            TestDatabaseSettings.TestDatabaseType.Sqlite => typeof(ReusableSqliteTestDatabase),
+            TestDatabaseSettings.TestDatabaseType.SqlServer => typeof(ReusableSqlServerTestDatabase),
             _ => throw new Exception($"Reusable test database implementation for {settings.DatabaseType} not found.")
         };
 

@@ -17,7 +17,7 @@ using Umbraco.Cms.Tests.Integration.Testing;
 
 namespace UmbracoTestsComposition.Common.Database;
 
-public class ReusedSqliteTestDatabase : IReusableTestDatabase
+public class ReusableSqliteTestDatabase : IReusableTestDatabase
 {
     private const string FolderName = "reused-databases";
     private const string DatabaseFileName = "reused-database.sqlite";
@@ -29,7 +29,7 @@ public class ReusedSqliteTestDatabase : IReusableTestDatabase
     private TestDbMeta? meta;
     private bool wasRebuilt;
 
-    public ReusedSqliteTestDatabase
+    public ReusableSqliteTestDatabase
     (
         TestUmbracoDatabaseFactoryProvider databaseFactoryProvider,
         ILoggerFactory loggerFactory,

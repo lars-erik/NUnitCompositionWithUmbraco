@@ -18,7 +18,7 @@ using static Umbraco.Cms.Infrastructure.Persistence.UmbracoDatabase;
 
 namespace UmbracoTestsComposition.Common.Database;
 
-public class ReusedSqlServerTestDatabase : IReusableTestDatabase
+public class ReusableSqlServerTestDatabase : IReusableTestDatabase
 {
     private const string DatabaseName = "reused-database";
 
@@ -31,9 +31,7 @@ public class ReusedSqlServerTestDatabase : IReusableTestDatabase
     private TestDbMeta? meta;
     private bool wasRebuilt;
     
-    protected UmbracoDatabase.CommandInfo[] cachedDatabaseInitCommands = new UmbracoDatabase.CommandInfo[0];
-
-    public ReusedSqlServerTestDatabase(
+    public ReusableSqlServerTestDatabase(
         TestDatabaseSettings settings,
         TestUmbracoDatabaseFactoryProvider databaseFactoryProvider,
         ILoggerFactory loggerFactory,
@@ -176,7 +174,6 @@ public class ReusedSqlServerTestDatabase : IReusableTestDatabase
             }
             catch
             {
-                // We'll check if it exists later
             }
 
             try
@@ -186,7 +183,6 @@ public class ReusedSqlServerTestDatabase : IReusableTestDatabase
             }
             catch
             {
-
             }
 
             try
@@ -197,6 +193,7 @@ public class ReusedSqlServerTestDatabase : IReusableTestDatabase
             catch
             {
             }
+
             cmd.CommandText = $"DROP DATABASE [{DatabaseName}]";
             cmd.ExecuteNonQuery();
         }
@@ -213,7 +210,7 @@ public class ReusedSqlServerTestDatabase : IReusableTestDatabase
 
             using (var transaction = database.GetTransaction())
             {
-                var options =
+                var installOptions =
                     new TestOptionsMonitor<InstallDefaultDataSettings>(
                         new InstallDefaultDataSettings { InstallData = InstallDefaultDataOption.All });
 
@@ -223,15 +220,11 @@ public class ReusedSqlServerTestDatabase : IReusableTestDatabase
                     loggerFactory,
                     new UmbracoVersion(),
                     Mock.Of<IEventAggregator>(),
-                    options);
+                    installOptions);
 
                 schemaCreator.InitializeDatabaseSchema();
 
                 transaction.Complete();
-
-                cachedDatabaseInitCommands = ((IEnumerable<CommandInfo>)CommandsProperty.GetValue(database))
-                    .Where(x => !x.Text.StartsWith("SELECT ", StringComparison.OrdinalIgnoreCase))
-                    .ToArray();
             }
         }
     }

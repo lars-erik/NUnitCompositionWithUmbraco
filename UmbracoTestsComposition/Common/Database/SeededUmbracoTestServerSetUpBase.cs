@@ -80,8 +80,8 @@ public abstract class SeededUmbracoTestServerSetUpBase<TMainController> : Umbrac
 
         var databaseType = settings.DatabaseType switch
         {
-            TestDatabaseSettings.TestDatabaseType.Sqlite => typeof(ReusedSqliteTestDatabase),
-            TestDatabaseSettings.TestDatabaseType.SqlServer => typeof(ReusedSqlServerTestDatabase),
+            TestDatabaseSettings.TestDatabaseType.Sqlite => typeof(ReusableSqliteTestDatabase),
+            TestDatabaseSettings.TestDatabaseType.SqlServer => typeof(ReusableSqlServerTestDatabase),
             _ => throw new Exception($"Reusable test database implementation for {settings.DatabaseType} not found.")
         };
 
@@ -170,10 +170,6 @@ public abstract class SeededUmbracoTestServerSetUpBase<TMainController> : Umbrac
             .Add(new MediaTypeWithQualityHeaderValue(MediaTypeNames.Application.Json));
         return Task.CompletedTask;
     }
-
-    protected abstract Expression<Func<TMainController, object>> MethodSelector { get; }
-
-    protected virtual string Url => GetManagementApiUrl(MethodSelector);
 
     public async Task AuthenticateClientAsync(HttpClient client, string username, string password, bool isAdmin) =>
         await AuthenticateClientAsync(client,
