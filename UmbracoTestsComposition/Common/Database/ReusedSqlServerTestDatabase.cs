@@ -24,7 +24,7 @@ public class ReusedSqlServerTestDatabase : IReusableTestDatabase
     private readonly IUmbracoDatabaseFactory databaseFactory;
     private readonly TestDatabaseSettings settings;
     private readonly ILoggerFactory loggerFactory;
-    private readonly IOptions<ReusedTestDatabaseOptions> options;
+    private readonly ReusedTestDatabaseOptions options;
     private TestDbMeta? meta;
     private bool wasRebuilt;
     
@@ -34,7 +34,7 @@ public class ReusedSqlServerTestDatabase : IReusableTestDatabase
         TestDatabaseSettings settings,
         TestUmbracoDatabaseFactoryProvider databaseFactoryProvider,
         ILoggerFactory loggerFactory,
-        IOptions<ReusedTestDatabaseOptions> options
+        ReusedTestDatabaseOptions options
     )
     {
         this.databaseFactoryProvider = databaseFactoryProvider;
@@ -53,6 +53,7 @@ public class ReusedSqlServerTestDatabase : IReusableTestDatabase
             if (ShouldRebuild())
             {
                 RebuildWithSchema();
+                wasRebuilt = true;
             }
 
             return meta!;
@@ -61,15 +62,17 @@ public class ReusedSqlServerTestDatabase : IReusableTestDatabase
 
     public async Task EnsureSeeded(IServiceProvider serviceProvider)
     {
-        var shouldSeed = wasRebuilt || await (options?.Value?.NeedsNewSeed?.Invoke(meta!) ?? Task.FromResult(false));
+        var shouldSeed = wasRebuilt || await (options.NeedsNewSeed?.Invoke(meta!) ?? Task.FromResult(false));
         if (shouldSeed)
         {
-            await (options?.Value?.SeedData?.Invoke(serviceProvider) ?? Task.CompletedTask);
+            await (options.SeedData?.Invoke(serviceProvider) ?? Task.CompletedTask);
 
             await CreateSnapshot();
         }
-
-        await RestoreSnapshot();
+        else
+        {
+            await RestoreSnapshot();
+        }
     }
 
     private async Task CreateSnapshot()
@@ -81,7 +84,7 @@ public class ReusedSqlServerTestDatabase : IReusableTestDatabase
         await using var cn = new SqlConnection(settings.SQLServerMasterConnectionString);
         await cn.OpenAsync();
         await using var cmd = cn.CreateCommand();
-        var snapshotPath = Path.GetFullPath($"{DatabaseName}-snapshot.ss", options.Value.WorkingDirectory);
+        var snapshotPath = Path.GetFullPath($"{DatabaseName}-snapshot.ss", options.WorkingDirectory);
         cmd.CommandText =
             $"""
              CREATE DATABASE [{DatabaseName}-snapshot]
@@ -133,7 +136,7 @@ public class ReusedSqlServerTestDatabase : IReusableTestDatabase
         cmd.CommandText = "SELECT COUNT(*) FROM sysdatabases WHERE name = @name";
         cmd.Parameters.AddWithValue("name", DatabaseName);
         var exists = 1.Equals(cmd.ExecuteScalar());
-        var needsRebuild = !exists || (options.Value.NeedsNewSeed?.Invoke(meta!).GetAwaiter().GetResult() ?? false);
+        var needsRebuild = !exists || (options.NeedsNewSeed?.Invoke(meta!).GetAwaiter().GetResult() ?? false);
         return needsRebuild;
     }
 

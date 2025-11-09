@@ -37,30 +37,25 @@ using static NPoco.SqlBuilder;
 
 namespace UmbracoTestsComposition.Common.Database;
 
-public abstract class SeededUmbracoTestServerSetUpBase<TMainController>(bool authorize = false) : SeededUmbracoTestServerSetUpBase<TMainController, ReusedSqliteTestDatabase>(authorize)
-    where TMainController : ManagementApiControllerBase
-{
-}
-
-
 [ExtendableSetUpFixture]
 [OneTimeUmbracoSetUp]
 [ServiceProvider]
-public abstract class SeededUmbracoTestServerSetUpBase<TMainController, TTestDatabase> : UmbracoTestServerTestBase
+public abstract class SeededUmbracoTestServerSetUpBase<TMainController> : UmbracoTestServerTestBase
     where TMainController : ManagementApiControllerBase
-    where TTestDatabase : class, IReusableTestDatabase
 {
     private readonly bool authorize;
 
     #region Database Setup
 
-    TTestDatabase testDatabase = null!;
+    IReusableTestDatabase testDatabase = null!;
 
     private TestDbMeta? databaseMeta;
     public TestDbMeta DatabaseMeta => databaseMeta!;
 
     private bool ranTestServiceConfig = false;
     private bool ranCustomTestSetup = false;
+
+    private ReusedTestDatabaseOptions options;
 
     protected SeededUmbracoTestServerSetUpBase(bool authorize = false)
     {
@@ -73,14 +68,15 @@ public abstract class SeededUmbracoTestServerSetUpBase<TMainController, TTestDat
 
         base.ConfigureTestServices(services);
 
-        services.Configure<ReusedTestDatabaseOptions>(options =>
+        options = new ReusedTestDatabaseOptions
         {
-            options.WorkingDirectory = TestHelper.WorkingDirectory;
-            ConfigureTestDatabaseOptions(options);
-        });
-
-        services.AddSingleton<TTestDatabase>();
-        services.AddSingleton<ITestDatabase>(sp => sp.GetRequiredService<TTestDatabase>());
+            WorkingDirectory = TestHelper.WorkingDirectory
+        };
+        ConfigureTestDatabaseOptions(options);
+        services.AddSingleton(options);
+        
+        services.AddSingleton(options.DatabaseType);
+        services.AddSingleton<ITestDatabase>(sp => (ITestDatabase)sp.GetRequiredService(options.DatabaseType));
 
         services.AddKeyedTransient<HttpClient>("TestServerClient", (_, key) => {
             if (authorize)
@@ -116,8 +112,8 @@ public abstract class SeededUmbracoTestServerSetUpBase<TMainController, TTestDat
         builder.Services.Remove(existingFactories.First());
         builder.Services.AddTransient<IHostedService>(sp => new TestDatabaseHostedLifecycleService(() =>
         {
-            testDatabase = sp.GetRequiredService<TTestDatabase>();
-            var logger = sp.GetRequiredService<ILogger<SeededUmbracoTestServerSetUpBase<TMainController, TTestDatabase>>>();
+            testDatabase = (IReusableTestDatabase)sp.GetRequiredService(options.DatabaseType);
+            var logger = sp.GetRequiredService<ILogger<SeededUmbracoTestServerSetUpBase<TMainController>>>();
             logger.LogInformation($"Ensuring reused database");
             var meta = testDatabase.EnsureDatabase();
             databaseMeta = meta;

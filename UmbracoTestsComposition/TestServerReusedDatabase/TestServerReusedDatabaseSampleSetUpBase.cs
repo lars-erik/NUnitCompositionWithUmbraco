@@ -9,7 +9,7 @@ using UmbracoTestsComposition.Common.Database;
 
 namespace UmbracoTestsComposition.TestServerReusedDatabase;
 
-public abstract class TestServerReusedDatabaseSampleSetUpBase() : SeededUmbracoTestServerSetUpBase<BackOfficeController, ReusedSqlServerTestDatabase>(true)
+public abstract class TestServerReusedDatabaseSampleSetUpBase() : SeededUmbracoTestServerSetUpBase<BackOfficeController>(true)
 {
     public const string TestDocumentTypeId = "c9e9dd58-7c5f-47fc-9788-78a9b6fbf68d";
     public const string TestDocumentTypeAlias = "reusedDatabaseDocType";
@@ -17,6 +17,8 @@ public abstract class TestServerReusedDatabaseSampleSetUpBase() : SeededUmbracoT
 
     protected override void ConfigureTestDatabaseOptions(ReusedTestDatabaseOptions options)
     {
+        // TODO: Let's fixture up and add the type here instead, then run both SQL Server and SQLite tests
+        options.DatabaseType = typeof(ReusedSqlServerTestDatabase);
         options.NeedsNewSeed = _ => Task.FromResult(ReseedTrigger);
         options.SeedData = async (_) =>
         {
