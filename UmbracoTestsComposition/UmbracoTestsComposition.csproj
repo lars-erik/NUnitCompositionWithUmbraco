@@ -38,6 +38,10 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="TEMP\logs\" />
+  </ItemGroup>
+
   <PropertyGroup>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <GenerateDepsFile>true</GenerateDepsFile>

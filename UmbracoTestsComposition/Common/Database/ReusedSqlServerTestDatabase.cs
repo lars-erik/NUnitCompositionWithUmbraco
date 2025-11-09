@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Diagnostics;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using System.Reflection;
@@ -16,7 +17,7 @@ namespace UmbracoTestsComposition.Common.Database;
 
 public class ReusedSqlServerTestDatabase : IReusableTestDatabase
 {
-    private const string DatabaseName = "reused-databases";
+    private const string DatabaseName = "reused-database";
 
     private readonly Lock lockObj = new();
     private readonly TestUmbracoDatabaseFactoryProvider databaseFactoryProvider;
@@ -64,7 +65,53 @@ public class ReusedSqlServerTestDatabase : IReusableTestDatabase
         if (shouldSeed)
         {
             await (options?.Value?.SeedData?.Invoke(serviceProvider) ?? Task.CompletedTask);
+
+            await CreateSnapshot();
         }
+
+        await RestoreSnapshot();
+    }
+
+    private async Task CreateSnapshot()
+    {
+        var watch = new Stopwatch();
+        watch.Start();
+        await TestContext.Progress.WriteLineAsync("Creating snapshot");
+
+        await using var cn = new SqlConnection(settings.SQLServerMasterConnectionString);
+        await cn.OpenAsync();
+        await using var cmd = cn.CreateCommand();
+        var snapshotPath = Path.GetFullPath($"{DatabaseName}-snapshot.ss", options.Value.WorkingDirectory);
+        cmd.CommandText =
+            $"""
+             CREATE DATABASE [{DatabaseName}-snapshot]
+             ON (NAME = [{DatabaseName}], FILENAME = '{snapshotPath}')
+             AS SNAPSHOT OF [{DatabaseName}]
+             """;
+
+        await cmd.ExecuteNonQueryAsync();
+
+        await TestContext.Progress.WriteLineAsync($"Snapshot created {watch.Elapsed}");
+    }
+
+    private async Task RestoreSnapshot()
+    {
+        var watch = new Stopwatch();
+        watch.Start();
+        await TestContext.Progress.WriteLineAsync("Restoring snapshot");
+
+        await using var cn = new SqlConnection(settings.SQLServerMasterConnectionString);
+        await cn.OpenAsync();
+        await using var cmd = cn.CreateCommand();
+        cmd.CommandText = 
+            $"""
+             ALTER DATABASE [{DatabaseName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+             RESTORE DATABASE [{DatabaseName}] FROM DATABASE_SNAPSHOT = '{DatabaseName}-snapshot';
+             ALTER DATABASE [{DatabaseName}] SET MULTI_USER;
+             """;
+        await cmd.ExecuteNonQueryAsync();
+
+        await TestContext.Progress.WriteLineAsync($"Snapshot restored {watch.Elapsed}");
     }
 
     public TestDbMeta AttachEmpty() => AttachSchema();
@@ -103,16 +150,41 @@ public class ReusedSqlServerTestDatabase : IReusableTestDatabase
         var exists = 1.Equals(cmd.ExecuteScalar());
         if (exists)
         {
-            cmd.CommandText = $"ALTER DATABASE [{DatabaseName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE";
-            cmd.ExecuteNonQuery();
+            try
+            {
+                cmd.CommandText = $"ALTER DATABASE [{DatabaseName}-snapshot] SET SINGLE_USER WITH ROLLBACK IMMEDIATE";
+                cmd.ExecuteNonQuery();
+            }
+            catch
+            {
+                // We'll check if it exists later
+            }
+
+            try
+            {
+                cmd.CommandText = $"DROP DATABASE [{DatabaseName}-snapshot]";
+                cmd.ExecuteNonQuery();
+            }
+            catch
+            {
+
+            }
+
+            try
+            {
+                cmd.CommandText = $"ALTER DATABASE [{DatabaseName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE";
+                cmd.ExecuteNonQuery();
+            }
+            catch
+            {
+            }
             cmd.CommandText = $"DROP DATABASE [{DatabaseName}]";
             cmd.ExecuteNonQuery();
         }
 
         cmd.CommandText = $"CREATE DATABASE [{DatabaseName}]";
         cmd.ExecuteNonQuery();
-        cmd.CommandText = $"ALTER DATABASE [{DatabaseName}] SET READ_COMMITTED_SNAPSHOT ON";
-        cmd.ExecuteNonQuery();
+        cn.Close();
 
         databaseFactory.Configure(meta.ToStronglyTypedConnectionString());
 
