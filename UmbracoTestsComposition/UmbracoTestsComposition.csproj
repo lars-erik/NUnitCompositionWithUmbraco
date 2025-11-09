@@ -18,11 +18,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\NUnitComposition.Core\NUnitComposition.Core.csproj" />
-    <ProjectReference Include="..\NUnitComposition.Tests\NUnitComposition.Tests.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Using Include="NUnit.Framework" />
   </ItemGroup>
 
@@ -39,7 +34,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Common\" />
     <Folder Include="TEMP\logs\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Umbraco.Community.Integration.Tests.Extensions\Umbraco.Community.Integration.Tests.Extensions.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

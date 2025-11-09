@@ -14,6 +14,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docs", "Docs", "{02EA681E-C
 		README.md = README.md
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Umbraco.Community.Integration.Tests.Extensions", "Umbraco.Community.Integration.Tests.Extensions\Umbraco.Community.Integration.Tests.Extensions.csproj", "{8D3E2702-454F-4958-9BED-AAA3CE9D63D7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -32,6 +34,10 @@ Global
 		{FAC21EE1-DA69-4516-96B4-0FF6E1D4AD4B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FAC21EE1-DA69-4516-96B4-0FF6E1D4AD4B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FAC21EE1-DA69-4516-96B4-0FF6E1D4AD4B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8D3E2702-454F-4958-9BED-AAA3CE9D63D7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D3E2702-454F-4958-9BED-AAA3CE9D63D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D3E2702-454F-4958-9BED-AAA3CE9D63D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D3E2702-454F-4958-9BED-AAA3CE9D63D7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
