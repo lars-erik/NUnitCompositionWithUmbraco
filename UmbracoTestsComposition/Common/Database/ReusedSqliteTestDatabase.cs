@@ -1,3 +1,4 @@
+using System.Data;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -15,6 +16,7 @@ namespace UmbracoTestsComposition.Common.Database;
 public class ReusedSqliteTestDatabase : IReusableTestDatabase
 {
     private const string FolderName = "reused-databases";
+    private const string DatabaseFileName = "reused-database.sqlite";
 
     private readonly Lock lockObj = new();
     private readonly TestUmbracoDatabaseFactoryProvider databaseFactoryProvider;
@@ -45,6 +47,11 @@ public class ReusedSqliteTestDatabase : IReusableTestDatabase
             {
                 RebuildWithSchema();
             }
+            else
+            {
+                TestContext.Progress.WriteLine("Restoring from snapshot");
+                File.Copy(meta!.Path.Replace(".sqlite", "-snapshot.sqlite"), meta!.Path, overwrite: true);
+            }
 
             return meta!;
         }
@@ -55,7 +62,15 @@ public class ReusedSqliteTestDatabase : IReusableTestDatabase
         var shouldSeed = wasRebuilt || await (options?.Value?.NeedsNewSeed?.Invoke(meta!) ?? Task.FromResult(false));
         if (shouldSeed)
         {
+            TestContext.Progress.WriteLine("Seeding database");
             await (options?.Value?.SeedData?.Invoke(serviceProvider) ?? Task.CompletedTask);
+            
+            TestContext.Progress.WriteLine("Writing snapshot");
+            var snapshotPath = meta.Path!.Replace(".sqlite", "-snapshot.sqlite");
+            var dbFactory = databaseFactoryProvider.Create();
+            dbFactory.Configure(meta!.ToStronglyTypedConnectionString());
+            using var database = (UmbracoDatabase)dbFactory.CreateDatabase();
+            database.Execute($"VACUUM INTO '{snapshotPath}';");
         }
     }
 
@@ -67,7 +82,7 @@ public class ReusedSqliteTestDatabase : IReusableTestDatabase
 
     private void InitializeMetadata()
     {
-        var filePath = Path.GetFullPath(Path.Combine(FolderName, "reused-database.sqlite"), options.Value.WorkingDirectory);
+        var filePath = Path.GetFullPath(Path.Combine(FolderName, DatabaseFileName), options.Value.WorkingDirectory);
 
         var builder = new SqliteConnectionStringBuilder
         {
@@ -90,8 +105,11 @@ public class ReusedSqliteTestDatabase : IReusableTestDatabase
 
     private void RebuildWithSchema()
     {
+        TestContext.Progress.WriteLine("Creating database with schema");
+
         var databaseDirectory = Path.GetDirectoryName(meta!.Path)!;
         var databasePath = meta.Path!;
+        var snapshotPath = meta.Path!.Replace(".sqlite", "-snapshot.sqlite");
 
         lock (lockObj)
         {
@@ -99,6 +117,10 @@ public class ReusedSqliteTestDatabase : IReusableTestDatabase
             if (File.Exists(databasePath))
             {
                 File.Delete(databasePath);
+            }
+            if (File.Exists(snapshotPath))
+            {
+                File.Delete(snapshotPath);
             }
         }
 
@@ -123,6 +145,8 @@ public class ReusedSqliteTestDatabase : IReusableTestDatabase
         transaction.Complete();
 
         wasRebuilt = true;
+
+        TestContext.Progress.WriteLine("Database with schema created");
     }
 
     public bool ShouldRebuild()

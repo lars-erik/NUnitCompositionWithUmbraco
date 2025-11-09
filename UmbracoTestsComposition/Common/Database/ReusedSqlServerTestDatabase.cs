@@ -34,13 +34,13 @@ public class ReusedSqlServerTestDatabase : IReusableTestDatabase
         TestDatabaseSettings settings,
         TestUmbracoDatabaseFactoryProvider databaseFactoryProvider,
         ILoggerFactory loggerFactory,
-        ReusedTestDatabaseOptions options
+        IOptions<ReusedTestDatabaseOptions> options
     )
     {
         this.databaseFactoryProvider = databaseFactoryProvider;
         this.databaseFactory = databaseFactoryProvider.Create();
         this.settings = settings;
-        this.options = options;
+        this.options = options.Value;
         this.loggerFactory = loggerFactory;
 
         InitializeMetadata();

@@ -10,13 +10,9 @@ using Umbraco.Cms.Infrastructure.Persistence;
 using Umbraco.Cms.Tests.Common;
 using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
+using static Microsoft.IO.RecyclableMemoryStreamManager;
 
 namespace UmbracoTestsComposition.Common.Database;
-
-public abstract class SeededUmbracoIntegrationSetUpBase(bool boot = false)
-    : SeededUmbracoIntegrationSetUpBase<ReusedSqliteTestDatabase>(boot)
-{
-}
 
 [UmbracoTest(
     Database = UmbracoTestOptions.Database.None,
@@ -26,8 +22,7 @@ public abstract class SeededUmbracoIntegrationSetUpBase(bool boot = false)
 [ExtendableSetUpFixture]
 [OneTimeUmbracoSetUp]
 [ServiceProvider]
-public abstract class SeededUmbracoIntegrationSetUpBase<TDatabase>(bool boot = false) : UmbracoIntegrationTest
-    where TDatabase : class, IReusableTestDatabase
+public abstract class SeededUmbracoIntegrationSetUpBase(bool boot = false) : UmbracoIntegrationTest
 {
     private TestDbMeta? databaseMeta;
 
@@ -41,8 +36,9 @@ public abstract class SeededUmbracoIntegrationSetUpBase<TDatabase>(bool boot = f
             ConfigureTestDatabaseOptions(options);
         });
 
-        services.AddSingleton<TDatabase>();
-        services.AddSingleton<ITestDatabase>(sp => sp.GetRequiredService<TDatabase>());
+        services.AddSingleton(typeof(IReusableTestDatabase), sp => sp.CreateInstance(sp.GetRequiredService<IOptions<ReusedTestDatabaseOptions>>().Value.DatabaseType));
+        services.AddSingleton<ITestDatabase>(sp => sp.GetRequiredService<IReusableTestDatabase>());
+
 
         services.AddUnique<IUmbracoContextAccessor, TestUmbracoContextAccessor>();
     }
@@ -52,7 +48,7 @@ public abstract class SeededUmbracoIntegrationSetUpBase<TDatabase>(bool boot = f
     [OneTimeSetUp]
     public async Task EnsureReusedDatabaseAsync()
     {
-        var testDatabase = GetRequiredService<TDatabase>();
+        var testDatabase = Services.GetRequiredService<IReusableTestDatabase>();
         await TestContext.Progress.WriteLineAsync($"[{GetType().Name}] Ensuring reused database...");
         var meta = testDatabase.EnsureDatabase();
         databaseMeta = meta;
@@ -75,7 +71,7 @@ public abstract class SeededUmbracoIntegrationSetUpBase<TDatabase>(bool boot = f
     {
         if (databaseMeta != null)
         {
-            var testDatabase = GetRequiredService<ReusedSqliteTestDatabase>();
+            var testDatabase = GetRequiredService<IReusableTestDatabase>();
             TestContext.Progress.WriteLine($"[{GetType().Name}] Detaching reused database.");
             testDatabase.Detach(databaseMeta);
         }

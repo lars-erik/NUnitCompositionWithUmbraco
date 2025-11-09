@@ -9,10 +9,12 @@ namespace UmbracoTestsComposition.ReusedDatabase;
 
 public abstract class ReusedDatabaseSampleSetUpBase : SeededUmbracoIntegrationSetUpBase
 {
+    private readonly Type databaseType;
     protected static bool ReseedTrigger = true;
 
     protected override void ConfigureTestDatabaseOptions(ReusedTestDatabaseOptions options)
     {
+        options.DatabaseType = typeof(ReusedSqliteTestDatabase);
         options.NeedsNewSeed = _ => Task.FromResult(ReseedTrigger);
         options.SeedData = async (_) =>
         {

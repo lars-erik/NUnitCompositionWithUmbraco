@@ -55,8 +55,6 @@ public abstract class SeededUmbracoTestServerSetUpBase<TMainController> : Umbrac
     private bool ranTestServiceConfig = false;
     private bool ranCustomTestSetup = false;
 
-    private ReusedTestDatabaseOptions options;
-
     protected SeededUmbracoTestServerSetUpBase(bool authorize = false)
     {
         this.authorize = authorize;
@@ -68,15 +66,14 @@ public abstract class SeededUmbracoTestServerSetUpBase<TMainController> : Umbrac
 
         base.ConfigureTestServices(services);
 
-        options = new ReusedTestDatabaseOptions
+        services.Configure<ReusedTestDatabaseOptions>(options =>
         {
-            WorkingDirectory = TestHelper.WorkingDirectory
-        };
-        ConfigureTestDatabaseOptions(options);
-        services.AddSingleton(options);
+            options.WorkingDirectory = TestHelper.WorkingDirectory;
+            ConfigureTestDatabaseOptions(options);
+        });
         
-        services.AddSingleton(options.DatabaseType);
-        services.AddSingleton<ITestDatabase>(sp => (ITestDatabase)sp.GetRequiredService(options.DatabaseType));
+        services.AddSingleton(typeof(IReusableTestDatabase), sp => sp.CreateInstance(sp.GetRequiredService<IOptions<ReusedTestDatabaseOptions>>().Value.DatabaseType));
+        services.AddSingleton<ITestDatabase>(sp => sp.GetRequiredService<IReusableTestDatabase>());
 
         services.AddKeyedTransient<HttpClient>("TestServerClient", (_, key) => {
             if (authorize)
@@ -112,7 +109,7 @@ public abstract class SeededUmbracoTestServerSetUpBase<TMainController> : Umbrac
         builder.Services.Remove(existingFactories.First());
         builder.Services.AddTransient<IHostedService>(sp => new TestDatabaseHostedLifecycleService(() =>
         {
-            testDatabase = (IReusableTestDatabase)sp.GetRequiredService(options.DatabaseType);
+            testDatabase = sp.GetRequiredService<IReusableTestDatabase>();
             var logger = sp.GetRequiredService<ILogger<SeededUmbracoTestServerSetUpBase<TMainController>>>();
             logger.LogInformation($"Ensuring reused database");
             var meta = testDatabase.EnsureDatabase();
