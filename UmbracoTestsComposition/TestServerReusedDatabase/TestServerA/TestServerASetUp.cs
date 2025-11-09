@@ -30,8 +30,8 @@ public class AddTransactionMiddleware : IStartupFilter
     {
         return app =>
         {
-            next(app);
             app.UseMiddleware<TransactionMiddleware>();
+            next(app);
         };
     }
 }
@@ -54,11 +54,11 @@ public class TransactionMiddleware : IDisposable
         createdScope = false;
     }
 
-    public async Task Invoke(HttpContext ctx, IScopeProvider scopeProvider)
+    public async Task InvokeAsync(HttpContext ctx, ICoreScopeProvider scopeProvider)
     {
         if (!createdScope)
         {
-            CoreScope = scopeProvider.CreateScope(autoComplete: false, isolationLevel: IsolationLevel.Snapshot);
+            CoreScope = scopeProvider.CreateCoreScope(autoComplete: false, isolationLevel: IsolationLevel.Snapshot);
             
             createdScope = true;
         }
