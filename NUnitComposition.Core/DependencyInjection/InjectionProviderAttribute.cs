@@ -22,11 +22,16 @@ public class InjectionProviderAttribute : Attribute, IApplyToTest
             return;
         }
 
-        Func<IServiceProvider> factoryFunction = () => 
-            test.Fixture?.GetType().GetMethod(providerMemberName, AllInstanceMembers)?.Invoke(test.Fixture, null) as IServiceProvider ??
-            test.Fixture?.GetType().GetProperty(providerMemberName, AllInstanceMembers)?.GetValue(test.Fixture, null) as IServiceProvider
-            ?? throw new Exception("The fixture or provider method is not available, or the provider method did not return an IServiceProvider.");
-        
+        Func<IServiceProvider> factoryFunction = () =>
+        {
+            var fixtureType = test.Fixture!.GetType()!;
+            var providerMethod = fixtureType.GetMethod(providerMemberName, AllInstanceMembers);
+            var providerProperty = fixtureType.GetProperty(providerMemberName, AllInstanceMembers);
+            return 
+                providerMethod?.Invoke(test.Fixture, null) as IServiceProvider ??
+                providerProperty?.GetValue(test.Fixture, null) as IServiceProvider
+                ?? throw new Exception("The fixture or provider method is not available, or the provider method did not return an IServiceProvider.");
+        };
         test.Properties.Add(FactoryProperty, factoryFunction);
 
         var contextCurrentTest = TestExecutionContext.CurrentContext.CurrentTest;

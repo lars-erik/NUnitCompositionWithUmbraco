@@ -1,6 +1,8 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Castle.DynamicProxy;
 using NUnit.Framework.Interfaces;
 using NUnit.Framework.Internal;
+using System.Diagnostics.CodeAnalysis;
+using Umbraco.Community.Integration.Tests.Extensions;
 
 namespace NUnitComposition.Extensibility;
 
@@ -29,42 +31,26 @@ public class ExtendableSetUpFixtureAttribute : SetUpFixtureAttribute, IFixtureBu
 
     public new IEnumerable<TestSuite> BuildFrom(ITypeInfo typeInfo)
     {
+        //System.Diagnostics.Debugger.Launch();
         var fixture = new ExtendableSetUpFixture(typeInfo);
-        fixture.ApplyAttributesToTest(typeInfo.Type);
 
-        if (fixture.RunState != RunState.NotRunnable)
+        try
         {
-            string? reason = null;
-            if (!IsValidFixtureType(fixture, typeInfo, ref reason))
-                fixture.MakeInvalid(reason);
+            fixture.ApplyAttributesToTest(typeInfo.Type);
+
+            if (fixture.RunState != RunState.NotRunnable)
+            {
+                string? reason = null;
+                if (!IsValidFixtureType(fixture, typeInfo, ref reason))
+                    fixture.MakeInvalid(reason);
+            }
+        }
+        catch(Exception ex)
+        {
+            fixture.MakeInvalid(ex, $"Exception during fixture construction: {ex.Message}");
         }
 
         fixture.DelayedValidate();
-
-        // We don't have CurrentTest at this point - the following won't work.
-        /*
-        var context = TestExecutionContext.CurrentContext;
-        if (context?.CurrentTest is TestSuite suite)
-        {
-            var parent = suite;
-            while (parent.Parent is TestSuite p) parent = p;
-            var isNamespaceNode = parent.Name == fixture.TypeInfo.Namespace;
-            if (isNamespaceNode)
-            {
-                //foreach(var child in parent.Tests.OfType<TestSuite>())
-                //    fixture.Add(child);
-                //parent.Tests.Clear();
-                //if (parent.GetType().IsAssignableTo(typeof(SetUpFixture)) || parent is TestAssembly)
-                //{
-                //    parent.Add(fixture);
-                //}
-                //else
-                //{
-                //    throw new Exception("There's more to be done here");
-                //}
-            }
-        }
-        */
 
         return [fixture];
     }

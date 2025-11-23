@@ -2,6 +2,8 @@
 using Castle.DynamicProxy;
 using NUnit.Framework.Interfaces;
 using NUnit.Framework.Internal;
+using NUnitComposition.Extensibility;
+using Umbraco.Community.Integration.Tests.Extensions;
 
 namespace NUnitComposition.Lifecycle;
 
@@ -14,6 +16,7 @@ internal class FakeDirectSetUpMethodWrapper : IMethodInfo, IEquatable<FakeDirect
     /// <summary>
     /// Invokes the method, converting any TargetInvocationException to an NUnitException.
     /// </summary>
+    /// 
     /// <param name="fixture">The object on which to invoke the method</param>
     /// <param name="args">The argument list for the method</param>
     /// <returns>The return value from the invoked method</returns>
@@ -26,17 +29,19 @@ internal class FakeDirectSetUpMethodWrapper : IMethodInfo, IEquatable<FakeDirect
 
         try
         {
+
             var fixtureType = fixture.GetType();
-            var proxiedFixture = new ProxyGenerator().CreateClassProxyWithTarget(fixtureType, [typeof(IFakeSetUpMethods)], fixture);
+            var proxiedFixture = new ProxyGenerator().CreateClassProxyWithTarget(fixtureType, [typeof(IUmbracoLookalikeSetupMethods)], fixture, ((ExtendableSetUpFixture)originalTest).Interceptors);
 
             fixtureType = proxiedFixture.GetType();
-            var stubMethod = fixtureType.GetMethod(nameof(IFakeSetUpMethods.FakeSetUpMethod))!;
+            var stubMethod = fixtureType.GetMethod(nameof(IUmbracoLookalikeSetupMethods.FakeSetup))!;
 
             var methodInfo = new MethodWrapper(fixtureType, stubMethod);
             var setupMethodWrapper = new LifeCycleTestMethod(proxiedFixture, methodInfo, originalTest)
             {
                 Parent = originalTest
             };
+
             ((TestSuite)originalTest).Add(setupMethodWrapper);
             originalContext.CurrentTest = setupMethodWrapper;
             originalContext.TestObject = proxiedFixture;

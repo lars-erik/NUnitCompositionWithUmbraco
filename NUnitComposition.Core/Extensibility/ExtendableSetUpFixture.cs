@@ -1,4 +1,5 @@
-﻿using NUnit.Framework.Interfaces;
+﻿using Castle.DynamicProxy;
+using NUnit.Framework.Interfaces;
 using NUnit.Framework.Internal;
 
 namespace NUnitComposition.Extensibility;
@@ -35,6 +36,15 @@ public class ExtendableSetUpFixture : SetUpFixture, IExtendableLifecycle
         set => base.OneTimeTearDownMethods = value;
     }
 
+    private readonly List<IInterceptor> interceptors = new();
+
+    public IInterceptor[] Interceptors
+    {
+        get => interceptors.ToArray();
+    }
+
+    public object Proxy { get; private set; }
+
     public ExtendableSetUpFixture(ITypeInfo type) : base(type)
     {
         SetUpMethods = TypeInfo.GetMethodsWithAttribute<SetUpAttribute>(true);
@@ -60,5 +70,12 @@ public class ExtendableSetUpFixture : SetUpFixture, IExtendableLifecycle
     {
         return new ExtendableSetUpFixture(this, filter);
     }
+
+    public void SetProxy(object proxy)
+    {
+        this.Proxy = proxy;
+    }
+
+    public void AddInterceptor(IInterceptor interceptor) => interceptors.Add(interceptor);
 
 }

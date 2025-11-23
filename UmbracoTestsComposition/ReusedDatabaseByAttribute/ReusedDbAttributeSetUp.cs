@@ -59,8 +59,12 @@ public class ReusableDatabaseAttribute : Attribute
             return;
         }
         
+        // TODO: Verify we are using a proxy?
         if (test is IExtendableLifecycle extendable && type.IsAssignableTo(typeof(UmbracoIntegrationTestBase)))
         {
+            extendable.AddInterceptor(new ConfigureReusableDbInterceptor());
+
+            /*
             var method = extendable.OneTimeSetUpMethods.SingleOrDefault(x => x.Name == interceptMethod && x.GetParameters().Length == 0);
             if (method == null)
             {
@@ -70,10 +74,13 @@ public class ReusableDatabaseAttribute : Attribute
             }
 
             var index = extendable.OneTimeSetUpMethods.IndexOf(method);
+
+            // TODO: Figure out if we want to keep the other "fakedirectsetupmethodwrapper"
             extendable.OneTimeSetUpMethods[index] = new ReplaceStaticDbFieldWithReusableDatabase(
                 method.TypeInfo,
                 method.MethodInfo
             );
+            */
         }
         else
         {
@@ -82,7 +89,57 @@ public class ReusableDatabaseAttribute : Attribute
     }
 }
 
-internal class ReplaceStaticDbFieldWithReusableDatabase : IMethodInfo, IEquatable<ReplaceStaticDbFieldWithReusableDatabase>
+    public class ConfigureReusableDbInterceptor : IInterceptor
+    {
+        private static readonly PropertyInfo TestHelperProperty = typeof(UmbracoIntegrationTestBase).GetProperty("TestHelper", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        private static readonly PropertyInfo ConfigurationProperty = typeof(UmbracoIntegrationTestBase).GetProperty("Configuration", BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+        public void Intercept(IInvocation invocation)
+        {
+            // TODO: Find integration test name
+            if (invocation.Method.Name == "CustomTestSetup")
+            {
+                var fixture = //(IExposeUmbracoTestThings)
+                    invocation.Proxy;
+                var builder = (IUmbracoBuilder)invocation.Arguments[0];
+                var services = builder.Services;
+
+                var configuration = ((IConfiguration)ConfigurationProperty.GetValue(fixture)!);
+                var testHelper = ((TestHelper)TestHelperProperty.GetValue(fixture)!);
+
+                var settings = new TestDatabaseSettings
+                {
+                    FilesPath = Path.Combine(testHelper.WorkingDirectory, "databases"),
+                };
+                configuration.Bind("Tests:Database", settings);
+                services.AddSingleton(settings);
+
+                services.Configure<ReusedTestDatabaseOptions>(options =>
+                {
+                    options.WorkingDirectory = testHelper.WorkingDirectory;
+                    // TODO: Inject the seed method
+                    // ConfigureTestDatabaseOptions(options);
+                });
+
+                var databaseType = settings.DatabaseType switch
+                {
+                    TestDatabaseSettings.TestDatabaseType.Sqlite => typeof(ReusableSqliteTestDatabase),
+                    TestDatabaseSettings.TestDatabaseType.SqlServer => typeof(ReusableSqlServerTestDatabase),
+                    _ => throw new Exception($"Reusable test database implementation for {settings.DatabaseType} not found.")
+                };
+
+                services.AddSingleton(typeof(IReusableTestDatabase), sp => sp.CreateInstance(databaseType));
+                services.AddSingleton<ITestDatabase>(sp => sp.GetRequiredService<IReusableTestDatabase>());
+
+                services.AddUnique<IUmbracoContextAccessor, TestUmbracoContextAccessor>();
+            }
+
+            invocation.Proceed();
+
+        }
+    }
+
+    internal class ReplaceStaticDbFieldWithReusableDatabase : IMethodInfo, IEquatable<ReplaceStaticDbFieldWithReusableDatabase>
 {
     public object? Invoke(object? fixture, params object?[]? args)
     {
@@ -93,11 +150,10 @@ internal class ReplaceStaticDbFieldWithReusableDatabase : IMethodInfo, IEquatabl
 
         try
         {
-            var fixtureType = fixture.GetType();
-            var proxiedFixture = new ProxyGenerator().CreateClassProxyWithTarget(fixtureType, [typeof(IUmbracoLookalikeSetupMethods)], fixture, new ConfigureReusableDbInterceptor());
+            var proxiedFixture = fixture;
 
-            fixtureType = proxiedFixture.GetType();
-            var stubMethod = fixtureType.GetMethod(nameof(IUmbracoLookalikeSetupMethods.Setup))!;
+            var fixtureType = proxiedFixture.GetType();
+            var stubMethod = fixtureType.GetMethod(nameof(IUmbracoLookalikeSetupMethods.FakeSetup))!;
 
             var methodInfo = new MethodWrapper(fixtureType, stubMethod);
             var setupMethodWrapper = new LifeCycleTestMethod(proxiedFixture, methodInfo, originalTest)
@@ -297,63 +353,5 @@ internal class ReplaceStaticDbFieldWithReusableDatabase : IMethodInfo, IEquatabl
     public static bool operator !=(ReplaceStaticDbFieldWithReusableDatabase? left, ReplaceStaticDbFieldWithReusableDatabase? right)
     {
         return !Equals(left, right);
-    }
-}
-
-public interface IUmbracoLookalikeSetupMethods
-{
-    //TestHelper TestHelper { get; }
-    //IConfiguration Configuration { get; }
-    void Setup();
-    //void ConfigureServices(IServiceCollection services);
-}
-
-public class ConfigureReusableDbInterceptor : IInterceptor
-{
-    private static readonly PropertyInfo TestHelperProperty = typeof(UmbracoIntegrationTestBase).GetProperty("TestHelper", BindingFlags.Instance | BindingFlags.NonPublic)!;
-    private static readonly PropertyInfo ConfigurationProperty = typeof(UmbracoIntegrationTestBase).GetProperty("Configuration", BindingFlags.Instance | BindingFlags.NonPublic)!;
-
-    public void Intercept(IInvocation invocation)
-    {
-        // TODO: Find integration test name
-        if (invocation.Method.Name == "CustomTestSetup" && false)
-        {
-            var fixture = //(IExposeUmbracoTestThings)
-                invocation.Proxy;
-            var builder = (IUmbracoBuilder)invocation.Arguments[0];
-            var services = builder.Services;
-
-            var configuration = ((IConfiguration)ConfigurationProperty.GetValue(fixture)!);
-            var testHelper = ((TestHelper)TestHelperProperty.GetValue(fixture)!);
-
-            var settings = new TestDatabaseSettings
-            {
-                FilesPath = Path.Combine(testHelper.WorkingDirectory, "databases"),
-            };
-            configuration.Bind("Tests:Database", settings);
-            services.AddSingleton(settings);
-
-            services.Configure<ReusedTestDatabaseOptions>(options =>
-            {
-                options.WorkingDirectory = testHelper.WorkingDirectory;
-                // TODO: Inject the seed method
-                // ConfigureTestDatabaseOptions(options);
-            });
-
-            var databaseType = settings.DatabaseType switch
-            {
-                TestDatabaseSettings.TestDatabaseType.Sqlite => typeof(ReusableSqliteTestDatabase),
-                TestDatabaseSettings.TestDatabaseType.SqlServer => typeof(ReusableSqlServerTestDatabase),
-                _ => throw new Exception($"Reusable test database implementation for {settings.DatabaseType} not found.")
-            };
-
-            services.AddSingleton(typeof(IReusableTestDatabase), sp => sp.CreateInstance(databaseType));
-            services.AddSingleton<ITestDatabase>(sp => sp.GetRequiredService<IReusableTestDatabase>());
-
-            services.AddUnique<IUmbracoContextAccessor, TestUmbracoContextAccessor>();
-        }
-
-        invocation.Proceed();
-
     }
 }

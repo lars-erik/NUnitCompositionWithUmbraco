@@ -1,4 +1,5 @@
-﻿using NUnit.Framework.Interfaces;
+﻿using Castle.DynamicProxy;
+using NUnit.Framework.Interfaces;
 
 namespace NUnitComposition.Extensibility;
 
@@ -8,4 +9,6 @@ public interface IExtendableLifecycle : ITest
     IMethodInfo[] TearDownMethods { get; set; }
     IMethodInfo[] OneTimeSetUpMethods { get; set; }
     IMethodInfo[] OneTimeTearDownMethods { get; set; }
+    void SetProxy(object proxy);
+    void AddInterceptor(IInterceptor interceptor);
 }
