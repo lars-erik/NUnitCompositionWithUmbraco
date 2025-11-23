@@ -8,6 +8,11 @@ namespace UmbracoTestsComposition;
 [SetUpFixture]
 public class GlobalSettings : GlobalSetupTeardown
 {
+    public GlobalSettings()
+    {
+        this.ApplyPatches();
+    }
+
     [OneTimeTearDown]
     public void CheckForLingeringThreads()
     {

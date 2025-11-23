@@ -2,7 +2,7 @@
 
 namespace NUnitComposition.Extensibility;
 
-internal interface IExtendableLifecycle
+public interface IExtendableLifecycle : ITest
 {
     IMethodInfo[] SetUpMethods { get; set; }
     IMethodInfo[] TearDownMethods { get; set; }

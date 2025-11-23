@@ -1,4 +1,4 @@
-﻿using UmbracoTestsComposition.Common;
+﻿using Umbraco.Community.Integration.Tests.Extensions;
 
 namespace UmbracoTestsComposition.FeatureA;
 

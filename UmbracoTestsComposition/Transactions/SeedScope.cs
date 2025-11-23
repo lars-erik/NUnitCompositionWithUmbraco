@@ -1,5 +1,5 @@
 ﻿using Umbraco.Cms.Core.Services;
-using UmbracoTestsComposition.Common;
+using Umbraco.Community.Integration.Tests.Extensions;
 
 namespace UmbracoTestsComposition.Transactions;
 

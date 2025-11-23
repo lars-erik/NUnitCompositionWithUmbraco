@@ -1,6 +1,6 @@
 ﻿using Umbraco.Cms.Tests.Integration.Testing;
 
-namespace UmbracoTestsComposition.Common.Database;
+namespace Umbraco.Community.Integration.Tests.Extensions.Database;
 
 public class ReusedTestDatabaseOptions
 {

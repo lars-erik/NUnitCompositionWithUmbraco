@@ -1,4 +1,4 @@
-﻿namespace UmbracoTestsComposition.Common.Database;
+﻿namespace Umbraco.Community.Integration.Tests.Extensions.Database;
 
 public interface IBackofficeClientAuthenticator
 {

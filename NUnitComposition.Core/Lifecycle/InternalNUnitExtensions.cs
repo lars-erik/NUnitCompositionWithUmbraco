@@ -3,7 +3,7 @@ using System.Reflection;
 
 namespace NUnitComposition.Lifecycle;
 
-internal static class InternalNUnitExtensions
+public static class InternalNUnitExtensions
 {
     public static bool IsStatic(this Type type)
     {

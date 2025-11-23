@@ -3,7 +3,7 @@ using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Scoping;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Tests.Common.Builders;
-using UmbracoTestsComposition.Common.Database;
+using Umbraco.Community.Integration.Tests.Extensions.Database;
 
 namespace UmbracoTestsComposition.ReusedDatabase;
 

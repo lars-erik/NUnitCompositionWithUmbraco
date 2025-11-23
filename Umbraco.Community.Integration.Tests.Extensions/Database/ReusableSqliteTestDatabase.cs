@@ -4,8 +4,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using OpenIddict.Abstractions;
-using System.Data;
-using Umbraco.Cms.Api.Management.Security;
 using Umbraco.Cms.Core.Configuration;
 using Umbraco.Cms.Core.Configuration.Models;
 using Umbraco.Cms.Core.Events;
@@ -15,7 +13,7 @@ using Umbraco.Cms.Infrastructure.Security;
 using Umbraco.Cms.Tests.Common;
 using Umbraco.Cms.Tests.Integration.Testing;
 
-namespace UmbracoTestsComposition.Common.Database;
+namespace Umbraco.Community.Integration.Tests.Extensions.Database;
 
 public class ReusableSqliteTestDatabase : IReusableTestDatabase
 {

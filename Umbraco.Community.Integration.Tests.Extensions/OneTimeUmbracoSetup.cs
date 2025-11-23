@@ -1,7 +1,7 @@
 ﻿using NUnitComposition.Lifecycle;
 using Umbraco.Cms.Tests.Integration.Testing;
 
-namespace UmbracoTestsComposition.Common;
+namespace Umbraco.Community.Integration.Tests.Extensions;
 
 public class OneTimeUmbracoSetUpAttribute() : MakeOneTimeLifecycleAttribute(
     [nameof(UmbracoIntegrationTest.Setup), nameof(UmbracoIntegrationTest.SetUp_Logging)],

@@ -11,9 +11,8 @@ using Umbraco.Cms.Infrastructure.Persistence;
 using Umbraco.Cms.Tests.Common;
 using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
-using static Microsoft.IO.RecyclableMemoryStreamManager;
 
-namespace UmbracoTestsComposition.Common.Database;
+namespace Umbraco.Community.Integration.Tests.Extensions.Database;
 
 [UmbracoTest(
     Database = UmbracoTestOptions.Database.None,

@@ -1,11 +1,11 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using System.Diagnostics;
+using System.Reflection;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using OpenIddict.Abstractions;
-using System.Diagnostics;
-using System.Reflection;
 using Umbraco.Cms.Core.Configuration;
 using Umbraco.Cms.Core.Configuration.Models;
 using Umbraco.Cms.Core.Events;
@@ -14,9 +14,8 @@ using Umbraco.Cms.Infrastructure.Persistence;
 using Umbraco.Cms.Infrastructure.Security;
 using Umbraco.Cms.Tests.Common;
 using Umbraco.Cms.Tests.Integration.Testing;
-using static Umbraco.Cms.Infrastructure.Persistence.UmbracoDatabase;
 
-namespace UmbracoTestsComposition.Common.Database;
+namespace Umbraco.Community.Integration.Tests.Extensions.Database;
 
 public class ReusableSqlServerTestDatabase : IReusableTestDatabase
 {

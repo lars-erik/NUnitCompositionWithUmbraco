@@ -4,7 +4,7 @@ using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.PropertyEditors;
 using Umbraco.Cms.Core.Serialization;
 using Umbraco.Cms.Core.Services;
-using UmbracoTestsComposition.Common;
+using Umbraco.Community.Integration.Tests.Extensions;
 
 namespace UmbracoTestsComposition.FeatureB;
 

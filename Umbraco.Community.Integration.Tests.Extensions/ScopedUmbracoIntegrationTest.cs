@@ -1,9 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
-using NUnitComposition.Extensibility;
+﻿using NUnitComposition.Extensibility;
 using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
 
-namespace UmbracoTestsComposition.Common;
+namespace Umbraco.Community.Integration.Tests.Extensions;
 
 [UmbracoTest(
     Database = UmbracoTestOptions.Database.NewSchemaPerFixture,

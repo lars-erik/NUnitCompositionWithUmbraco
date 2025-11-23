@@ -3,7 +3,7 @@ using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using NUnitComposition.DependencyInjection;
 using Umbraco.Cms.Api.Management.ViewModels.DocumentType;
-using UmbracoTestsComposition.Common.Database;
+using Umbraco.Community.Integration.Tests.Extensions.Database;
 
 namespace UmbracoTestsComposition.TestServerReusedDatabase.TestServerA;
 
