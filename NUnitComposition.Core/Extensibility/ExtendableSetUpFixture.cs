@@ -74,6 +74,7 @@ public class ExtendableSetUpFixture : SetUpFixture, IExtendableLifecycle
     public void SetProxy(object proxy)
     {
         this.Proxy = proxy;
+        Fixture = proxy;
     }
 
     public void AddInterceptor(IInterceptor interceptor) => interceptors.Add(interceptor);

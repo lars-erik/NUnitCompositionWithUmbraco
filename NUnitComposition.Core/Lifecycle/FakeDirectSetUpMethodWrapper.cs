@@ -29,11 +29,9 @@ internal class FakeDirectSetUpMethodWrapper : IMethodInfo, IEquatable<FakeDirect
 
         try
         {
+            var proxiedFixture = fixture;
 
-            var fixtureType = fixture.GetType();
-            var proxiedFixture = new ProxyGenerator().CreateClassProxyWithTarget(fixtureType, [typeof(IUmbracoLookalikeSetupMethods)], fixture, ((ExtendableSetUpFixture)originalTest).Interceptors);
-
-            fixtureType = proxiedFixture.GetType();
+            var fixtureType = proxiedFixture.GetType();
             var stubMethod = fixtureType.GetMethod(nameof(IUmbracoLookalikeSetupMethods.FakeSetup))!;
 
             var methodInfo = new MethodWrapper(fixtureType, stubMethod);
@@ -46,7 +44,7 @@ internal class FakeDirectSetUpMethodWrapper : IMethodInfo, IEquatable<FakeDirect
             originalContext.CurrentTest = setupMethodWrapper;
             originalContext.TestObject = proxiedFixture;
 
-            var result = Reflect.InvokeMethod(MethodInfo, fixture, args);
+            var result = Reflect.InvokeMethod(MethodInfo, proxiedFixture, args);
 
             return result;
         }

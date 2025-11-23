@@ -31,7 +31,7 @@ public class ExtendableSetUpFixtureAttribute : SetUpFixtureAttribute, IFixtureBu
 
     public new IEnumerable<TestSuite> BuildFrom(ITypeInfo typeInfo)
     {
-        //System.Diagnostics.Debugger.Launch();
+        System.Diagnostics.Debugger.Launch();
         var fixture = new ExtendableSetUpFixture(typeInfo);
 
         try
@@ -44,13 +44,18 @@ public class ExtendableSetUpFixtureAttribute : SetUpFixtureAttribute, IFixtureBu
                 if (!IsValidFixtureType(fixture, typeInfo, ref reason))
                     fixture.MakeInvalid(reason);
             }
+
+            fixture.DelayedValidate();
+
+            var fixtureType = fixture.TypeInfo.Type;
+            var proxiedFixture = new ProxyGenerator().CreateClassProxy(fixtureType, [typeof(IUmbracoLookalikeSetupMethods)], fixture.Interceptors);
+            fixture.SetProxy(proxiedFixture);
+
         }
         catch(Exception ex)
         {
             fixture.MakeInvalid(ex, $"Exception during fixture construction: {ex.Message}");
         }
-
-        fixture.DelayedValidate();
 
         return [fixture];
     }

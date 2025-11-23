@@ -16,6 +16,8 @@ public class GlobalSettings : GlobalSetupTeardown
     [OneTimeTearDown]
     public void CheckForLingeringThreads()
     {
+        return; // Temporarily disabled while investigating test suite stability
+
         TestContext.Progress.WriteLine("==== Active Threads in last teardown ====");
         foreach (var t in Process.GetCurrentProcess().Threads.Cast<ProcessThread>())
             TestContext.Progress.WriteLine($"Thread {t.Id}: {t.ThreadState} {(t.ThreadState == ThreadState.Wait ? t.WaitReason : "N/A")} {t.Site?.GetType().Name} {t.Container?.GetType().Name}");
