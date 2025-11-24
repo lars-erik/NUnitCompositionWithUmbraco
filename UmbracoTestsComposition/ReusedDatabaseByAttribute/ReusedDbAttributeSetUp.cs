@@ -6,6 +6,7 @@ using NUnitComposition.Extensibility;
 using NUnitComposition.Lifecycle;
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Core.Web;
 using Umbraco.Cms.Tests.Common;
@@ -26,29 +27,20 @@ namespace UmbracoTestsComposition.ReusedDatabaseByAttribute;
 [ExtendableSetUpFixture]
 [OneTimeUmbracoSetUp]
 [ReusableDatabase]
-//[ServiceProvider]
+[ServiceProvider]
 public class ReusedDbAttributeSetUp : UmbracoIntegrationTest
 {
-    private static ReusedDbAttributeSetUp instance;
-
-    public static IServiceProvider ServiceProvider => instance.Services;
-
     [OneTimeSetUp]
     public void Initialize()
     {
-        instance = this;
+        TestContext.Progress.WriteLine("HMM!");
     }
 }
 
-public class ReusableDatabaseAttribute : Attribute
-    , IApplyToTest
-    //, ITestAction
+public class ReusableDatabaseAttribute : Attribute, IApplyToTest
 {
-    string interceptMethod = null!;
-
-    public ReusableDatabaseAttribute(string? interceptMethod = null)
+    public ReusableDatabaseAttribute()
     {
-        this.interceptMethod = interceptMethod ?? nameof(UmbracoIntegrationTest.Setup);
     }
 
     public void ApplyToTest(Test test)
@@ -63,24 +55,6 @@ public class ReusableDatabaseAttribute : Attribute
         if (test is IExtendableLifecycle extendable && type.IsAssignableTo(typeof(UmbracoIntegrationTestBase)))
         {
             extendable.AddInterceptor(new ConfigureReusableDbInterceptor());
-
-            /*
-            var method = extendable.OneTimeSetUpMethods.SingleOrDefault(x => x.Name == interceptMethod && x.GetParameters().Length == 0);
-            if (method == null)
-            {
-                throw new Exception($"Method '{interceptMethod}' not found on {type}. " +
-                                    $"Unless {type} is derived from {nameof(UmbracoIntegrationTest)} or {nameof(UmbracoTestServerTestBase)} " +
-                                    $"you need to pass the setup method name to the {nameof(ReusableDatabaseAttribute)} constructor.");
-            }
-
-            var index = extendable.OneTimeSetUpMethods.IndexOf(method);
-
-            // TODO: Figure out if we want to keep the other "fakedirectsetupmethodwrapper"
-            extendable.OneTimeSetUpMethods[index] = new ReplaceStaticDbFieldWithReusableDatabase(
-                method.TypeInfo,
-                method.MethodInfo
-            );
-            */
         }
         else
         {
@@ -96,16 +70,16 @@ public class ReusableDatabaseAttribute : Attribute
 
         public void Intercept(IInvocation invocation)
         {
-            // TODO: Find integration test name
+            invocation.Proceed();
+
+            var fixture = invocation.Proxy;
+            var configuration = ((IConfiguration)ConfigurationProperty.GetValue(fixture)!);
+            var testHelper = ((TestHelper)TestHelperProperty.GetValue(fixture)!);
+
             if (invocation.Method.Name == "CustomTestSetup")
             {
-                var fixture = //(IExposeUmbracoTestThings)
-                    invocation.Proxy;
                 var builder = (IUmbracoBuilder)invocation.Arguments[0];
                 var services = builder.Services;
-
-                var configuration = ((IConfiguration)ConfigurationProperty.GetValue(fixture)!);
-                var testHelper = ((TestHelper)TestHelperProperty.GetValue(fixture)!);
 
                 var settings = new TestDatabaseSettings
                 {
@@ -119,6 +93,8 @@ public class ReusableDatabaseAttribute : Attribute
                     options.WorkingDirectory = testHelper.WorkingDirectory;
                     // TODO: Inject the seed method
                     // ConfigureTestDatabaseOptions(options);
+                    options.NeedsNewSeed = _ => Task.FromResult(true);
+                    options.SeedData = _ => Task.CompletedTask;
                 });
 
                 var databaseType = settings.DatabaseType switch
@@ -133,9 +109,26 @@ public class ReusableDatabaseAttribute : Attribute
 
                 services.AddUnique<IUmbracoContextAccessor, TestUmbracoContextAccessor>();
             }
+            else if (invocation.Method.Name == "ConfigureTestServices")
+            {
+                var services = ((IServiceCollection)invocation.Arguments[0]);
 
-            invocation.Proceed();
+                var settings = new TestDatabaseSettings
+                {
+                    FilesPath = Path.Combine(testHelper.WorkingDirectory, "databases"),
+                    DatabaseType =
+                        configuration.GetValue<TestDatabaseSettings.TestDatabaseType>("Tests:Database:DatabaseType"),
+                    PrepareThreadCount = configuration.GetValue<int>("Tests:Database:PrepareThreadCount"),
+                    EmptyDatabasesCount = configuration.GetValue<int>("Tests:Database:EmptyDatabasesCount"),
+                    SchemaDatabaseCount = configuration.GetValue<int>("Tests:Database:SchemaDatabaseCount"),
+                    SQLServerMasterConnectionString = configuration.GetValue<string>("Tests:Database:SQLServerMasterConnectionString")
+                };
 
+                Directory.CreateDirectory(settings.FilesPath);
+
+                var db = new ReusableSqliteTestDatabase(testHelper, (UmbracoIntegrationTestBase)invocation.Proxy);
+                typeof(UmbracoIntegrationTestBase).GetField("s_dbInstance", BindingFlags.NonPublic | BindingFlags.Static)!.SetValue(null, db);
+            }
         }
     }
 

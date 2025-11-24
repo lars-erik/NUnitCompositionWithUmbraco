@@ -31,7 +31,7 @@ public class ExtendableSetUpFixtureAttribute : SetUpFixtureAttribute, IFixtureBu
 
     public new IEnumerable<TestSuite> BuildFrom(ITypeInfo typeInfo)
     {
-        System.Diagnostics.Debugger.Launch();
+        // System.Diagnostics.Debugger.Launch();
         var fixture = new ExtendableSetUpFixture(typeInfo);
 
         try

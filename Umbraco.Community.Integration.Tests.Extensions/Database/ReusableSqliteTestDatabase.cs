@@ -1,3 +1,4 @@
+using System.Reflection;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -11,21 +12,25 @@ using Umbraco.Cms.Infrastructure.Migrations.Install;
 using Umbraco.Cms.Infrastructure.Persistence;
 using Umbraco.Cms.Infrastructure.Security;
 using Umbraco.Cms.Tests.Common;
+using Umbraco.Cms.Tests.Integration.Implementations;
 using Umbraco.Cms.Tests.Integration.Testing;
 
 namespace Umbraco.Community.Integration.Tests.Extensions.Database;
 
 public class ReusableSqliteTestDatabase : IReusableTestDatabase
 {
+    private readonly UmbracoIntegrationTestBase invocationProxy;
     private const string FolderName = "reused-databases";
     private const string DatabaseFileName = "reused-database.sqlite";
 
     private readonly Lock lockObj = new();
-    private readonly TestUmbracoDatabaseFactoryProvider databaseFactoryProvider;
-    private readonly ILoggerFactory loggerFactory;
-    private readonly IOptions<ReusedTestDatabaseOptions> options;
+    private TestUmbracoDatabaseFactoryProvider databaseFactoryProvider;
+    private ILoggerFactory loggerFactory;
+    private IOptions<ReusedTestDatabaseOptions> options;
     private TestDbMeta? meta;
     private bool wasRebuilt;
+
+    private bool resolve;
 
     public ReusableSqliteTestDatabase
     (
@@ -38,13 +43,32 @@ public class ReusableSqliteTestDatabase : IReusableTestDatabase
         this.options = options;
         this.loggerFactory = loggerFactory;
 
-        InitializeMetadata();
+        InitializeMetadata(this.options.Value.WorkingDirectory);
+
+        resolve = false;
+    }
+
+    public ReusableSqliteTestDatabase
+        (TestHelper testHelper, UmbracoIntegrationTestBase invocationProxy)
+    {
+        this.invocationProxy = invocationProxy;
+        resolve = true;
+
+        InitializeMetadata(testHelper.WorkingDirectory);
     }
 
     public TestDbMeta EnsureDatabase()
     {
         lock (lockObj)
         {
+            if (resolve)
+            {
+                var services = (IServiceProvider)invocationProxy.GetType().GetProperty("Services", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(invocationProxy)!;
+                options = services.GetRequiredService<IOptions<ReusedTestDatabaseOptions>>();
+                loggerFactory = services.GetRequiredService<ILoggerFactory>();
+                databaseFactoryProvider = services.GetRequiredService<TestUmbracoDatabaseFactoryProvider>();
+            }
+
             if (ShouldRebuild())
             {
                 RebuildWithSchema();
@@ -66,6 +90,8 @@ public class ReusableSqliteTestDatabase : IReusableTestDatabase
 
     public async Task EnsureSeeded(IServiceProvider serviceProvider)
     {
+
+
         var shouldSeed = wasRebuilt || await (options?.Value?.NeedsNewSeed?.Invoke(meta!) ?? Task.FromResult(false));
 
         if (shouldSeed)
@@ -102,9 +128,9 @@ public class ReusableSqliteTestDatabase : IReusableTestDatabase
 
     public void Detach(TestDbMeta id) { }
 
-    private void InitializeMetadata()
+    private void InitializeMetadata(string workingDirectory)
     {
-        var filePath = Path.GetFullPath(Path.Combine(FolderName, DatabaseFileName), options.Value.WorkingDirectory);
+        var filePath = Path.GetFullPath(Path.Combine(FolderName, DatabaseFileName), workingDirectory);
 
         var builder = new SqliteConnectionStringBuilder
         {

@@ -4,7 +4,7 @@ using Umbraco.Cms.Core.Services;
 
 namespace UmbracoTestsComposition.ReusedDatabaseByAttribute;
 
-//[Inject(nameof(Inject))]
+[Inject(nameof(Inject))]
 public class ReusedDbByAttributeFixture
 {
     private IDataTypeService dataTypeService;
@@ -17,7 +17,6 @@ public class ReusedDbByAttributeFixture
     [Test]
     public async Task CanReadData()
     {
-        dataTypeService = ReusedDbAttributeSetUp.ServiceProvider.GetRequiredService<IDataTypeService>();
         var dataTypes = await dataTypeService.GetAllAsync();
         Assert.That(dataTypes.ToList(), Has.Count.GreaterThan(0));
     }

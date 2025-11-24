@@ -32,9 +32,10 @@ internal class FakeDirectSetUpMethodWrapper : IMethodInfo, IEquatable<FakeDirect
             var proxiedFixture = fixture;
 
             var fixtureType = proxiedFixture.GetType();
-            var stubMethod = fixtureType.GetMethod(nameof(IUmbracoLookalikeSetupMethods.FakeSetup))!;
+            var methodName = MethodInfo.Name;
+            var inheritedMethod = fixtureType.GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)!;
+            var methodInfo = new MethodWrapper(fixtureType, inheritedMethod);
 
-            var methodInfo = new MethodWrapper(fixtureType, stubMethod);
             var setupMethodWrapper = new LifeCycleTestMethod(proxiedFixture, methodInfo, originalTest)
             {
                 Parent = originalTest
@@ -42,19 +43,19 @@ internal class FakeDirectSetUpMethodWrapper : IMethodInfo, IEquatable<FakeDirect
 
             ((TestSuite)originalTest).Add(setupMethodWrapper);
             originalContext.CurrentTest = setupMethodWrapper;
-            originalContext.TestObject = proxiedFixture;
 
-            var result = Reflect.InvokeMethod(MethodInfo, proxiedFixture, args);
+            var result = Reflect.InvokeMethod(methodInfo.MethodInfo, proxiedFixture, args);
 
             return result;
+
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
-            throw;
+            originalTest.MakeInvalid(ex, "Failed to invoke setup method via proxy");
+            return null;
         }
         finally
         {
-            originalContext.TestObject = fixture;
             originalContext.CurrentTest = originalTest;
         }
     }
