@@ -96,25 +96,32 @@ public class ReusableSqliteTestDatabase : IReusableTestDatabase
     {
         var shouldSeed = wasRebuilt || await (options?.Value?.NeedsNewSeed?.Invoke(meta!) ?? Task.FromResult(false));
 
+
+        if (wasRebuilt)
+        {
+            await TestContext.Progress.WriteLineAsync("Adding OpenID schema and seed data");
+
+            using var scope = services.CreateScope();
+            var openIdDictManager = scope.ServiceProvider.GetService<IOpenIddictApplicationManager?>();
+            if (openIdDictManager != null)
+            {
+                var initializer = scope.ServiceProvider.GetService<IBackOfficeApplicationManager>();
+                if (initializer != null)
+                {
+                    await initializer.EnsureBackOfficeApplicationAsync([new Uri("https://localhost")]);
+                }
+            }
+        }
+
         if (shouldSeed)
         {
             await TestContext.Progress.WriteLineAsync("Seeding database");
 
-            using (var scope = services.CreateScope())
-            {
-                var openIdDictManager = scope.ServiceProvider.GetService<IOpenIddictApplicationManager?>();
-                if (openIdDictManager != null)
-                {
-                    var initializer = scope.ServiceProvider.GetService<IBackOfficeApplicationManager>();
-                    if (initializer != null)
-                    {
-                        await initializer.EnsureBackOfficeApplicationAsync([new Uri("https://localhost")]);
-                    }
-                }
-            }
-
             await (options?.Value?.SeedData?.Invoke(services) ?? Task.CompletedTask);
+        }
 
+        if (wasRebuilt || shouldSeed)
+        {
             await TestContext.Progress.WriteLineAsync("Writing snapshot");
             var snapshotPath = meta!.Path!.Replace(".sqlite", "-snapshot.sqlite");
             var dbFactory = databaseFactoryProvider.Create();

@@ -106,8 +106,9 @@ public class ReusableSqlServerTestDatabase : IReusableTestDatabase
         var shouldSeed = wasRebuilt || await (options.NeedsNewSeed?.Invoke(meta!) ?? Task.FromResult(false));
         if (shouldSeed)
         {
-            using (var scope = serviceProvider.CreateScope())
+            if (wasRebuilt)
             {
+                using var scope = serviceProvider.CreateScope();
                 var openIdDictManager = scope.ServiceProvider.GetService<IOpenIddictApplicationManager?>();
                 if (openIdDictManager != null)
                 {
@@ -119,9 +120,15 @@ public class ReusableSqlServerTestDatabase : IReusableTestDatabase
                 }
             }
 
-            await (options.SeedData?.Invoke(serviceProvider) ?? Task.CompletedTask);
+            if (shouldSeed)
+            {
+                await (options.SeedData?.Invoke(serviceProvider) ?? Task.CompletedTask);
+            }
 
-            await CreateSnapshot();
+            if (wasRebuilt || shouldSeed)
+            {
+                await CreateSnapshot();
+            }
         }
         else
         {
