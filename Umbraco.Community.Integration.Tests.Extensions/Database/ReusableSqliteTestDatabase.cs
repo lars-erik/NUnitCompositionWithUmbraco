@@ -20,6 +20,8 @@ namespace Umbraco.Community.Integration.Tests.Extensions.Database;
 public class ReusableSqliteTestDatabase : IReusableTestDatabase
 {
     private readonly UmbracoIntegrationTestBase invocationProxy;
+    private bool resolve;
+    
     private const string FolderName = "reused-databases";
     private const string DatabaseFileName = "reused-database.sqlite";
 
@@ -30,7 +32,6 @@ public class ReusableSqliteTestDatabase : IReusableTestDatabase
     private TestDbMeta? meta;
     private bool wasRebuilt;
 
-    private bool resolve;
 
     public ReusableSqliteTestDatabase
     (
@@ -48,8 +49,7 @@ public class ReusableSqliteTestDatabase : IReusableTestDatabase
         resolve = false;
     }
 
-    public ReusableSqliteTestDatabase
-        (TestHelper testHelper, UmbracoIntegrationTestBase invocationProxy)
+    public ReusableSqliteTestDatabase(TestHelper testHelper, UmbracoIntegrationTestBase invocationProxy)
     {
         this.invocationProxy = invocationProxy;
         resolve = true;

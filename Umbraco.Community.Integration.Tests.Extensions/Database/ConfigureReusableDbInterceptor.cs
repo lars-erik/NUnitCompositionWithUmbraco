@@ -76,8 +76,8 @@ public class ConfigureReusableDbInterceptor : IInterceptor
                 _ => throw new Exception($"Reusable test database implementation for {settings.DatabaseType} not found.")
             };
 
-            // TODO: Use database type
-            var db = new ReusableSqliteTestDatabase(testHelper, (UmbracoIntegrationTestBase)invocation.Proxy);
+            // TODO: Always pass settings as well?
+            var db = Activator.CreateInstance(databaseType, [testHelper, (UmbracoIntegrationTestBase)invocation.Proxy]);
             typeof(UmbracoIntegrationTestBase).GetField("s_dbInstance", BindingFlags.NonPublic | BindingFlags.Static)!.SetValue(null, db);
             services.AddSingleton(typeof(IReusableTestDatabase), db);
         }

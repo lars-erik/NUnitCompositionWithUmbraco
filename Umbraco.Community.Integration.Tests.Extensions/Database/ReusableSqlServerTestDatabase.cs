@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Reflection;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -13,23 +14,49 @@ using Umbraco.Cms.Infrastructure.Migrations.Install;
 using Umbraco.Cms.Infrastructure.Persistence;
 using Umbraco.Cms.Infrastructure.Security;
 using Umbraco.Cms.Tests.Common;
+using Umbraco.Cms.Tests.Integration.Implementations;
 using Umbraco.Cms.Tests.Integration.Testing;
 
 namespace Umbraco.Community.Integration.Tests.Extensions.Database;
 
 public class ReusableSqlServerTestDatabase : IReusableTestDatabase
 {
+    private readonly UmbracoIntegrationTestBase invocationProxy;
+    private bool resolve;
+
     private const string DatabaseName = "reused-database";
 
     private readonly Lock lockObj = new();
-    private readonly TestUmbracoDatabaseFactoryProvider databaseFactoryProvider;
-    private readonly IUmbracoDatabaseFactory databaseFactory;
-    private readonly TestDatabaseSettings settings;
-    private readonly ILoggerFactory loggerFactory;
-    private readonly ReusableTestDatabaseOptions options;
+    private TestUmbracoDatabaseFactoryProvider databaseFactoryProvider;
+    private IUmbracoDatabaseFactory databaseFactory;
+    private TestDatabaseSettings settings;
+    private ILoggerFactory loggerFactory;
+    private ReusableTestDatabaseOptions options;
     private TestDbMeta? meta;
     private bool wasRebuilt;
-    
+
+    public ReusableSqlServerTestDatabase(TestHelper testHelper, UmbracoIntegrationTestBase fixture)
+    {
+        invocationProxy = fixture;
+        resolve = true;
+        
+        var configProp = fixture.GetType().GetProperty("Configuration", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy)!;
+        var config = ((IConfiguration)configProp.GetValue(fixture)!);
+
+        settings = new TestDatabaseSettings
+        {
+            FilesPath = Path.Combine(testHelper.WorkingDirectory, "databases"),
+            DatabaseType =
+                config.GetValue<TestDatabaseSettings.TestDatabaseType>("Tests:Database:DatabaseType"),
+            PrepareThreadCount = config.GetValue<int>("Tests:Database:PrepareThreadCount"),
+            EmptyDatabasesCount = config.GetValue<int>("Tests:Database:EmptyDatabasesCount"),
+            SchemaDatabaseCount = config.GetValue<int>("Tests:Database:SchemaDatabaseCount"),
+            SQLServerMasterConnectionString = config.GetValue<string>("Tests:Database:SQLServerMasterConnectionString")!
+        };
+
+        InitializeMetadata();
+    }
+
     public ReusableSqlServerTestDatabase(
         TestDatabaseSettings settings,
         TestUmbracoDatabaseFactoryProvider databaseFactoryProvider,
@@ -50,6 +77,15 @@ public class ReusableSqlServerTestDatabase : IReusableTestDatabase
     {
         lock (lockObj)
         {
+            if (resolve)
+            {
+                var services = (IServiceProvider)invocationProxy.GetType().GetProperty("Services", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(invocationProxy)!;
+                databaseFactoryProvider = services.GetRequiredService<TestUmbracoDatabaseFactoryProvider>();
+                databaseFactory = databaseFactoryProvider.Create();
+                options = services.GetRequiredService<IOptions<ReusableTestDatabaseOptions>>().Value;
+                loggerFactory = services.GetRequiredService<ILoggerFactory>();
+            }
+
             if (ShouldRebuild())
             {
                 RebuildWithSchema();
