@@ -48,8 +48,8 @@ public class ExtendableSetUpFixtureAttribute : SetUpFixtureAttribute, IFixtureBu
             fixture.DelayedValidate();
 
             var fixtureType = fixture.TypeInfo.Type;
-            var proxiedFixture = new ProxyGenerator().CreateClassProxy(fixtureType, [typeof(IUmbracoLookalikeSetupMethods)], fixture.Interceptors);
-            fixture.SetProxy(proxiedFixture);
+            var proxiedFixture = new ProxyGenerator().CreateClassProxy(fixtureType, fixture.Interceptors);
+            fixture.SetFixture(proxiedFixture);
 
         }
         catch(Exception ex)

@@ -26,7 +26,7 @@ public class ReusableSqlServerTestDatabase : IReusableTestDatabase
     private readonly IUmbracoDatabaseFactory databaseFactory;
     private readonly TestDatabaseSettings settings;
     private readonly ILoggerFactory loggerFactory;
-    private readonly ReusedTestDatabaseOptions options;
+    private readonly ReusableTestDatabaseOptions options;
     private TestDbMeta? meta;
     private bool wasRebuilt;
     
@@ -34,7 +34,7 @@ public class ReusableSqlServerTestDatabase : IReusableTestDatabase
         TestDatabaseSettings settings,
         TestUmbracoDatabaseFactoryProvider databaseFactoryProvider,
         ILoggerFactory loggerFactory,
-        IOptions<ReusedTestDatabaseOptions> options
+        IOptions<ReusableTestDatabaseOptions> options
     )
     {
         this.databaseFactoryProvider = databaseFactoryProvider;

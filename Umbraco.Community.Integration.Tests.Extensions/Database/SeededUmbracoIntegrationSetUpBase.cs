@@ -37,7 +37,7 @@ public abstract class SeededUmbracoIntegrationSetUpBase(bool boot = false) : Umb
         Configuration.Bind("Tests:Database", settings);
         services.AddSingleton(settings);
 
-        services.Configure<ReusedTestDatabaseOptions>(options =>
+        services.Configure<ReusableTestDatabaseOptions>(options =>
         {
             options.WorkingDirectory = TestHelper.WorkingDirectory;
             ConfigureTestDatabaseOptions(options);
@@ -57,7 +57,7 @@ public abstract class SeededUmbracoIntegrationSetUpBase(bool boot = false) : Umb
         services.AddUnique<IUmbracoContextAccessor, TestUmbracoContextAccessor>();
     }
 
-    protected abstract void ConfigureTestDatabaseOptions(ReusedTestDatabaseOptions options);
+    protected abstract void ConfigureTestDatabaseOptions(ReusableTestDatabaseOptions options);
 
     [OneTimeSetUp]
     public async Task EnsureReusedDatabaseAsync()

@@ -9,6 +9,6 @@ public interface IExtendableLifecycle : ITest
     IMethodInfo[] TearDownMethods { get; set; }
     IMethodInfo[] OneTimeSetUpMethods { get; set; }
     IMethodInfo[] OneTimeTearDownMethods { get; set; }
-    void SetProxy(object proxy);
     void AddInterceptor(IInterceptor interceptor);
+    void AddPostHandler(string methodName, Action handler);
 }

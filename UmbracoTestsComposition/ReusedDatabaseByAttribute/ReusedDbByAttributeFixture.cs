@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NUnitComposition.DependencyInjection;
+using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
 
 namespace UmbracoTestsComposition.ReusedDatabaseByAttribute;
@@ -17,7 +18,8 @@ public class ReusedDbByAttributeFixture
     [Test]
     public async Task CanReadData()
     {
-        var dataTypes = await dataTypeService.GetAllAsync();
-        Assert.That(dataTypes.ToList(), Has.Count.GreaterThan(0));
+        var dataTypes = (await dataTypeService.GetAllAsync()).ToArray();
+        Assert.That(dataTypes, Has.Length.GreaterThan(0));
+        Assert.That(dataTypes, Has.One.With.Property(nameof(IDataType.Name)).EqualTo("A seeded textbox"));
     }
 }

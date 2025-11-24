@@ -26,7 +26,7 @@ public class ReusableSqliteTestDatabase : IReusableTestDatabase
     private readonly Lock lockObj = new();
     private TestUmbracoDatabaseFactoryProvider databaseFactoryProvider;
     private ILoggerFactory loggerFactory;
-    private IOptions<ReusedTestDatabaseOptions> options;
+    private IOptions<ReusableTestDatabaseOptions> options;
     private TestDbMeta? meta;
     private bool wasRebuilt;
 
@@ -36,7 +36,7 @@ public class ReusableSqliteTestDatabase : IReusableTestDatabase
     (
         TestUmbracoDatabaseFactoryProvider databaseFactoryProvider,
         ILoggerFactory loggerFactory,
-        IOptions<ReusedTestDatabaseOptions> options
+        IOptions<ReusableTestDatabaseOptions> options
     )
     {
         this.databaseFactoryProvider = databaseFactoryProvider;
@@ -64,7 +64,7 @@ public class ReusableSqliteTestDatabase : IReusableTestDatabase
             if (resolve)
             {
                 var services = (IServiceProvider)invocationProxy.GetType().GetProperty("Services", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(invocationProxy)!;
-                options = services.GetRequiredService<IOptions<ReusedTestDatabaseOptions>>();
+                options = services.GetRequiredService<IOptions<ReusableTestDatabaseOptions>>();
                 loggerFactory = services.GetRequiredService<ILoggerFactory>();
                 databaseFactoryProvider = services.GetRequiredService<TestUmbracoDatabaseFactoryProvider>();
             }
@@ -90,8 +90,6 @@ public class ReusableSqliteTestDatabase : IReusableTestDatabase
 
     public async Task EnsureSeeded(IServiceProvider serviceProvider)
     {
-
-
         var shouldSeed = wasRebuilt || await (options?.Value?.NeedsNewSeed?.Invoke(meta!) ?? Task.FromResult(false));
 
         if (shouldSeed)

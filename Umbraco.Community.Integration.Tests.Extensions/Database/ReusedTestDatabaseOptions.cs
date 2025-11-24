@@ -2,7 +2,7 @@
 
 namespace Umbraco.Community.Integration.Tests.Extensions.Database;
 
-public class ReusedTestDatabaseOptions
+public class ReusableTestDatabaseOptions
 {
     public Func<TestDbMeta, Task<bool>>? NeedsNewSeed { get; set; }
 

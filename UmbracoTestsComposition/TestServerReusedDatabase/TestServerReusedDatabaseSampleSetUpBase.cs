@@ -15,7 +15,7 @@ public abstract class TestServerReusedDatabaseSampleSetUpBase() : SeededUmbracoT
     public const string TestDocumentTypeAlias = "reusedDatabaseDocType";
     protected static bool ReseedTrigger = true;
 
-    protected override void ConfigureTestDatabaseOptions(ReusedTestDatabaseOptions options)
+    protected override void ConfigureTestDatabaseOptions(ReusableTestDatabaseOptions options)
     {
         options.NeedsNewSeed = _ => Task.FromResult(ReseedTrigger);
         options.SeedData = async (_) =>

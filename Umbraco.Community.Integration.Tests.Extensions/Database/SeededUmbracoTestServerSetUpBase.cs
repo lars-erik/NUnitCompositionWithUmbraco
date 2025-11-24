@@ -68,7 +68,7 @@ public abstract class SeededUmbracoTestServerSetUpBase<TMainController> : Umbrac
         Configuration.Bind("Tests:Database", settings);
         services.AddSingleton(settings);
 
-        services.Configure<ReusedTestDatabaseOptions>(options =>
+        services.Configure<ReusableTestDatabaseOptions>(options =>
         {
             options.WorkingDirectory = TestHelper.WorkingDirectory;
             ConfigureTestDatabaseOptions(options);
@@ -95,7 +95,7 @@ public abstract class SeededUmbracoTestServerSetUpBase<TMainController> : Umbrac
         });
     }
 
-    protected abstract void ConfigureTestDatabaseOptions(ReusedTestDatabaseOptions options);
+    protected abstract void ConfigureTestDatabaseOptions(ReusableTestDatabaseOptions options);
 
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {

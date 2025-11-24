@@ -57,6 +57,6 @@ public class MakeOneTimeLifecycleAttribute : Attribute, IApplyToTest, IApplyToCo
     protected virtual IMethodInfo WrapSetUpMethod(IMethodInfo methodInfo)
     {
         // TODO: Figure out if we always want the fake direct setup methods.
-        return new FakeDirectSetUpMethodWrapper(methodInfo.TypeInfo.Type, methodInfo.MethodInfo);
+        return new LifecycleMethodWrapper(methodInfo.TypeInfo.Type, methodInfo.MethodInfo);
     }
 }

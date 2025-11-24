@@ -1,6 +1,7 @@
 ﻿using Castle.DynamicProxy;
 using NUnit.Framework.Interfaces;
 using NUnit.Framework.Internal;
+using NUnitComposition.Lifecycle;
 
 namespace NUnitComposition.Extensibility;
 
@@ -71,7 +72,7 @@ public class ExtendableSetUpFixture : SetUpFixture, IExtendableLifecycle
         return new ExtendableSetUpFixture(this, filter);
     }
 
-    public void SetProxy(object proxy)
+    public void SetFixture(object proxy)
     {
         this.Proxy = proxy;
         Fixture = proxy;
@@ -79,4 +80,14 @@ public class ExtendableSetUpFixture : SetUpFixture, IExtendableLifecycle
 
     public void AddInterceptor(IInterceptor interceptor) => interceptors.Add(interceptor);
 
+    public void AddPostHandler(string methodName, Action handler)
+    {
+        var setupMethod = OneTimeSetUpMethods.OfType<LifecycleMethodWrapper>().FirstOrDefault(x => x.Name == methodName);
+        if (setupMethod == null)
+        {
+            MakeInvalid($"Cannot add post handler. No OneTimeSetUp method found with name '{methodName}'.");
+            return;
+        }
+        setupMethod.AddPostHandler(handler);
+    }
 }

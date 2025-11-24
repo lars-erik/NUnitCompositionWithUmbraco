@@ -1,69 +1,17 @@
 ﻿using System.Reflection;
-using Castle.DynamicProxy;
 using NUnit.Framework.Interfaces;
 using NUnit.Framework.Internal;
-using NUnitComposition.Extensibility;
-using Umbraco.Community.Integration.Tests.Extensions;
+using NUnitComposition.Lifecycle;
 
-namespace NUnitComposition.Lifecycle;
+namespace Umbraco.Community.Integration.Tests.Extensions;
 
-/// <summary>
-/// Adds a child Test with a dynamic Fixture to TestContext.CurrentTest that has a directly declared method.
-/// This can be used to facilitate custom attribute discovery on setup fixtures with no direct methods of their own.
-/// </summary>
-internal class FakeDirectSetUpMethodWrapper : IMethodInfo, IEquatable<FakeDirectSetUpMethodWrapper>
+internal abstract class MethodWrapperBase<TWrapper> : IMethodInfo, IEquatable<MethodWrapperBase<TWrapper>>
+    where TWrapper : MethodWrapperBase<TWrapper>
 {
-    /// <summary>
-    /// Invokes the method, converting any TargetInvocationException to an NUnitException.
-    /// </summary>
-    /// 
-    /// <param name="fixture">The object on which to invoke the method</param>
-    /// <param name="args">The argument list for the method</param>
-    /// <returns>The return value from the invoked method</returns>
-    public object? Invoke(object? fixture, params object?[]? args)
-    {
-        if (fixture == null) throw new ArgumentNullException(nameof(fixture));
-
-        var originalContext = TestExecutionContext.CurrentContext;
-        var originalTest = originalContext.CurrentTest;
-
-        try
-        {
-            var proxiedFixture = fixture;
-
-            var fixtureType = proxiedFixture.GetType();
-            var methodName = MethodInfo.Name;
-            var inheritedMethod = fixtureType.GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)!;
-            var methodInfo = new MethodWrapper(fixtureType, inheritedMethod);
-
-            var setupMethodWrapper = new LifeCycleTestMethod(proxiedFixture, methodInfo, originalTest)
-            {
-                Parent = originalTest
-            };
-
-            ((TestSuite)originalTest).Add(setupMethodWrapper);
-            originalContext.CurrentTest = setupMethodWrapper;
-
-            var result = Reflect.InvokeMethod(methodInfo.MethodInfo, proxiedFixture, args);
-
-            return result;
-
-        }
-        catch (Exception ex)
-        {
-            originalTest.MakeInvalid(ex, "Failed to invoke setup method via proxy");
-            return null;
-        }
-        finally
-        {
-            originalContext.CurrentTest = originalTest;
-        }
-    }
-
     /// <summary>
     /// Construct a MethodWrapper for a Type and a MethodInfo.
     /// </summary>
-    public FakeDirectSetUpMethodWrapper(Type type, MethodInfo method)
+    public MethodWrapperBase(Type type, MethodInfo method)
     {
         TypeInfo = new TypeWrapper(type);
         MethodInfo = method;
@@ -72,13 +20,20 @@ internal class FakeDirectSetUpMethodWrapper : IMethodInfo, IEquatable<FakeDirect
     /// <summary>
     /// Construct a MethodInfo for a given Type and method name.
     /// </summary>
-    public FakeDirectSetUpMethodWrapper(Type type, string methodName)
+    public MethodWrapperBase(Type type, string methodName)
     {
         TypeInfo = new TypeWrapper(type);
         MethodInfo = type.GetMethod(methodName);
     }
 
-    #region IMethod Implementation
+    /// <summary>
+    /// Invokes the method, converting any TargetInvocationException to an NUnitException.
+    /// </summary>
+    /// 
+    /// <param name="fixture">The object on which to invoke the method</param>
+    /// <param name="args">The argument list for the method</param>
+    /// <returns>The return value from the invoked method</returns>
+    public abstract object? Invoke(object? fixture, params object?[]? args);
 
     /// <summary>
     /// Gets the Type from which this method was reflected.
@@ -199,7 +154,7 @@ internal class FakeDirectSetUpMethodWrapper : IMethodInfo, IEquatable<FakeDirect
     {
         return MethodInfo.HasAttribute<T>(inherit);
     }
-    
+
     /// <summary>
     /// Override ToString() so that error messages in NUnit's own tests make sense
     /// </summary>
@@ -208,9 +163,7 @@ internal class FakeDirectSetUpMethodWrapper : IMethodInfo, IEquatable<FakeDirect
         return MethodInfo.Name;
     }
 
-    #endregion
-
-    public bool Equals(FakeDirectSetUpMethodWrapper? other)
+    public bool Equals(MethodWrapperBase<TWrapper>? other)
     {
         if (other is null) return false;
         if (ReferenceEquals(this, other)) return true;
@@ -222,7 +175,7 @@ internal class FakeDirectSetUpMethodWrapper : IMethodInfo, IEquatable<FakeDirect
         if (obj is null) return false;
         if (ReferenceEquals(this, obj)) return true;
         if (obj.GetType() != GetType()) return false;
-        return Equals((FakeDirectSetUpMethodWrapper)obj);
+        return Equals((MethodWrapperBase<TWrapper>?)(object?)(MethodWrapperBase<TWrapper>)obj);
     }
 
     public override int GetHashCode()
@@ -230,12 +183,12 @@ internal class FakeDirectSetUpMethodWrapper : IMethodInfo, IEquatable<FakeDirect
         return HashCode.Combine(TypeInfo, MethodInfo);
     }
 
-    public static bool operator ==(FakeDirectSetUpMethodWrapper? left, FakeDirectSetUpMethodWrapper? right)
+    public static bool operator ==(MethodWrapperBase<TWrapper>? left, MethodWrapperBase<TWrapper>? right)
     {
         return Equals(left, right);
     }
 
-    public static bool operator !=(FakeDirectSetUpMethodWrapper? left, FakeDirectSetUpMethodWrapper? right)
+    public static bool operator !=(MethodWrapperBase<TWrapper>? left, MethodWrapperBase<TWrapper>? right)
     {
         return !Equals(left, right);
     }
