@@ -199,7 +199,7 @@ public class ReusableSqliteTestDatabase : IReusableTestDatabase
 
     public bool ShouldRebuild()
     {
-        if (!File.Exists(meta!.Path))
+        if (!File.Exists(meta!.Path) || !File.Exists(meta!.Path.Replace(".sqlite", "-snapshot.sqlite")))
         {
             return true;
         }
