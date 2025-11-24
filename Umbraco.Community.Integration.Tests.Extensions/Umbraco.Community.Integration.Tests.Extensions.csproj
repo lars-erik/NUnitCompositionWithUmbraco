@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>$(MSBuildProjectName)</RootNamespace>
+    <IsPackable>True</IsPackable>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Copyright>2025 © Lars-Erik Aabech</Copyright>
     <PackageProjectUrl>https://github.com/lars-erik/NUnitCompositionWithUmbraco</PackageProjectUrl>
@@ -15,6 +16,13 @@
     <IncludeSymbols>True</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
   <ItemGroup>
     <Compile Include="..\NUnitComposition.Core\Extensibility\**\*.cs" Link="Extensibility\%(RecursiveDir)%(Filename)%(Extension)" />

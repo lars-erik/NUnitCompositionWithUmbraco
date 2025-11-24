@@ -1,11 +1,11 @@
 # NUnit Composition with Umbraco
 
-[![NuGet Version](https://img.shields.io/nuget/v/NUnitComposition.Core)](https://www.nuget.org/packages/NUnitComposition.Core)
+[![NuGet Version](https://img.shields.io/nuget/v/Umbraco.Community.Integration.Tests.Extensions)](https://www.nuget.org/packages/Umbraco.Community.Integration.Tests.Extensions)
 
 ## Installation
 
 ```
-dotnet add package NUnitComposition.Core --version 1.0.0-beta002
+dotnet add package Umbraco.Community.Integration.Tests.Extensions --version 1.0.0-beta003
 ```
 
 ## Overview / Problem statement
@@ -37,6 +37,7 @@ The tern "scope fixture" is used to descibe an NUnit fixture with only `OneTimeS
 | `[MakeOneTimeLifecycle]` | Moves `[SetUp]` and `[TearDown]` methods to one-time lifecycle. Necessary to use `UmbracoIntegrationTest` and others as base classes for scoped setup fixtures. | NUnit |
 | `[InjectionSource]` | Allows a scope fixture to expose an `IServiceProvider` instance to child tests. | NUnit |
 | `[Inject]` | Allows a test fixture to receive services from the closest `[InjectionSource]` in the hierarchy. | NUnit |
+| `[ReusableDatabase]` | Marks a scope fixture to re-use the database schema and seed data for child tests. | Umbraco |
 
 ## Dependency Injection Example
 
