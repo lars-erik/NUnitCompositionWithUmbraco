@@ -4,6 +4,7 @@ using NUnit.Framework.Interfaces;
 using NUnit.Framework.Internal;
 using NUnitComposition.Extensibility;
 using Umbraco.Cms.Tests.Integration.Testing;
+using Umbraco.Cms.Tests.Integration.TestServerTest;
 
 namespace Umbraco.Community.Integration.Tests.Extensions.Database;
 
@@ -35,7 +36,18 @@ public class ReusableDatabaseAttribute : Attribute, IApplyToTest
         if (test is IExtendableLifecycle extendable && type.IsAssignableTo(typeof(UmbracoIntegrationTestBase)))
         {
             extendable.AddInterceptor(new ConfigureReusableDbInterceptor(configureOptionsType ?? type, configureOptionsMethodName));
-            extendable.AddPostHandler(nameof(UmbracoIntegrationTest.Setup), () => EnsureSeeded(extendable.Fixture!));
+
+            if (extendable.TypeInfo!.Type.IsAssignableTo(typeof(UmbracoIntegrationTest)))
+            {
+                extendable.AddPostHandler(nameof(UmbracoIntegrationTest.Setup), () => EnsureSeeded(extendable.Fixture!));
+            }
+            else if (extendable.TypeInfo!.Type.IsAssignableTo(typeof(UmbracoTestServerTestBase)))
+            {
+                extendable.AddPostHandler(
+                    extendable.OneTimeSetUpMethods.Single(x => x.Name == nameof(UmbracoTestServerTestBase.Setup) && x.TypeInfo.Type == typeof(UmbracoTestServerTestBase)), 
+                    () => EnsureSeeded(extendable.Fixture!)
+                );
+            }
 
             var cleanupMethod = new DelegateMethodWrapper(test.TypeInfo!.Type, GetType(), nameof(RemoveStaticDbInstance));
             extendable.OneTimeTearDownMethods = extendable.OneTimeTearDownMethods.Concat([cleanupMethod]).ToArray();

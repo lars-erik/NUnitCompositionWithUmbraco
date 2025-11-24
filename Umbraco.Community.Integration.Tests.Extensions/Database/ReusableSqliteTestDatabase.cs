@@ -31,8 +31,7 @@ public class ReusableSqliteTestDatabase : IReusableTestDatabase
     private IOptions<ReusableTestDatabaseOptions> options;
     private TestDbMeta? meta;
     private bool wasRebuilt;
-
-
+    
     public ReusableSqliteTestDatabase
     (
         TestUmbracoDatabaseFactoryProvider databaseFactoryProvider,
@@ -57,16 +56,21 @@ public class ReusableSqliteTestDatabase : IReusableTestDatabase
         InitializeMetadata(testHelper.WorkingDirectory);
     }
 
-    public TestDbMeta EnsureDatabase()
+    public TestDbMeta EnsureDatabase(IServiceProvider? services)
     {
         lock (lockObj)
         {
             if (resolve)
             {
-                var services = (IServiceProvider)invocationProxy.GetType().GetProperty("Services", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(invocationProxy)!;
+                if (services == null)
+                {
+                    services = (IServiceProvider)invocationProxy.GetType().GetProperty("Services", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(invocationProxy)!;
+                }
+
                 options = services.GetRequiredService<IOptions<ReusableTestDatabaseOptions>>();
                 loggerFactory = services.GetRequiredService<ILoggerFactory>();
                 databaseFactoryProvider = services.GetRequiredService<TestUmbracoDatabaseFactoryProvider>();
+                resolve = false;
             }
 
             if (ShouldRebuild())
@@ -88,7 +92,7 @@ public class ReusableSqliteTestDatabase : IReusableTestDatabase
         File.Copy(meta!.Path.Replace(".sqlite", "-snapshot.sqlite"), meta!.Path, overwrite: true);
     }
 
-    public async Task EnsureSeeded(IServiceProvider serviceProvider)
+    public async Task EnsureSeeded(IServiceProvider services)
     {
         var shouldSeed = wasRebuilt || await (options?.Value?.NeedsNewSeed?.Invoke(meta!) ?? Task.FromResult(false));
 
@@ -96,7 +100,7 @@ public class ReusableSqliteTestDatabase : IReusableTestDatabase
         {
             await TestContext.Progress.WriteLineAsync("Seeding database");
 
-            using (var scope = serviceProvider.CreateScope())
+            using (var scope = services.CreateScope())
             {
                 var openIdDictManager = scope.ServiceProvider.GetService<IOpenIddictApplicationManager?>();
                 if (openIdDictManager != null)
@@ -109,7 +113,7 @@ public class ReusableSqliteTestDatabase : IReusableTestDatabase
                 }
             }
 
-            await (options?.Value?.SeedData?.Invoke(serviceProvider) ?? Task.CompletedTask);
+            await (options?.Value?.SeedData?.Invoke(services) ?? Task.CompletedTask);
 
             await TestContext.Progress.WriteLineAsync("Writing snapshot");
             var snapshotPath = meta!.Path!.Replace(".sqlite", "-snapshot.sqlite");
@@ -122,7 +126,7 @@ public class ReusableSqliteTestDatabase : IReusableTestDatabase
 
     public TestDbMeta AttachEmpty() => AttachSchema();
 
-    public TestDbMeta AttachSchema() => EnsureDatabase();
+    public TestDbMeta AttachSchema() => EnsureDatabase(null);
 
     public void Detach(TestDbMeta id) { }
 

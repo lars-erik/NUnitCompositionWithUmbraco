@@ -73,17 +73,22 @@ public class ReusableSqlServerTestDatabase : IReusableTestDatabase
         InitializeMetadata();
     }
 
-    public TestDbMeta EnsureDatabase()
+    public TestDbMeta EnsureDatabase(IServiceProvider? services)
     {
         lock (lockObj)
         {
             if (resolve)
             {
-                var services = (IServiceProvider)invocationProxy.GetType().GetProperty("Services", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(invocationProxy)!;
+                if (services == null)
+                {
+                    services = (IServiceProvider)invocationProxy.GetType().GetProperty("Services", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(invocationProxy)!;
+                }
+
                 databaseFactoryProvider = services.GetRequiredService<TestUmbracoDatabaseFactoryProvider>();
                 databaseFactory = databaseFactoryProvider.Create();
                 options = services.GetRequiredService<IOptions<ReusableTestDatabaseOptions>>().Value;
                 loggerFactory = services.GetRequiredService<ILoggerFactory>();
+                resolve = false;
             }
 
             if (ShouldRebuild())
@@ -168,7 +173,7 @@ public class ReusableSqlServerTestDatabase : IReusableTestDatabase
 
     public TestDbMeta AttachEmpty() => AttachSchema();
 
-    public TestDbMeta AttachSchema() => EnsureDatabase();
+    public TestDbMeta AttachSchema() => EnsureDatabase(null);
 
     public void Detach(TestDbMeta id) { }
 

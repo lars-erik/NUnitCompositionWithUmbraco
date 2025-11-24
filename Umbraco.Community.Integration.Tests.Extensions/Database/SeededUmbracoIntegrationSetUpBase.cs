@@ -64,7 +64,7 @@ public abstract class SeededUmbracoIntegrationSetUpBase(bool boot = false) : Umb
     {
         var testDatabase = Services.GetRequiredService<IReusableTestDatabase>();
         await TestContext.Progress.WriteLineAsync($"[{GetType().Name}] Ensuring reused database...");
-        var meta = testDatabase.EnsureDatabase();
+        var meta = testDatabase.EnsureDatabase(Services);
         databaseMeta = meta;
 
         await TestContext.Progress.WriteLineAsync($"[{GetType().Name}] Database set up with connection string: {meta.ConnectionString}");

@@ -1,11 +1,21 @@
 ﻿using Castle.DynamicProxy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Reflection;
+using Umbraco.Cms.Core.Configuration.Models;
+using Umbraco.Cms.Core.Events;
+using Umbraco.Cms.Core.Notifications;
+using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Web;
+using Umbraco.Cms.Infrastructure.Persistence;
 using Umbraco.Cms.Tests.Common;
+using Umbraco.Cms.Tests.Common.TestHelpers;
 using Umbraco.Cms.Tests.Integration.Implementations;
 using Umbraco.Cms.Tests.Integration.Testing;
+using Umbraco.Cms.Tests.Integration.TestServerTest;
 
 namespace Umbraco.Community.Integration.Tests.Extensions.Database;
 
@@ -77,9 +87,36 @@ public class ConfigureReusableDbInterceptor : IInterceptor
             };
 
             // TODO: Always pass settings as well?
-            var db = Activator.CreateInstance(databaseType, [testHelper, (UmbracoIntegrationTestBase)invocation.Proxy]);
+            var db = (IReusableTestDatabase)Activator.CreateInstance(databaseType, [testHelper, (UmbracoIntegrationTestBase)invocation.Proxy])!;
             typeof(UmbracoIntegrationTestBase).GetField("s_dbInstance", BindingFlags.NonPublic | BindingFlags.Static)!.SetValue(null, db);
             services.AddSingleton(typeof(IReusableTestDatabase), db);
+
+            if (fixture.GetType().IsAssignableTo(typeof(UmbracoTestServerTestBase)))
+            {
+                var existingFactories = services.Where(x => x.ServiceType == typeof(IHostedService) && x.ImplementationFactory?.Target == fixture);
+                services.Remove(existingFactories.First());
+                services.AddTransient<IHostedService>(sp => new TestDatabaseHostedLifecycleService(() =>
+                {
+                    db = (IReusableTestDatabase)sp.GetRequiredService<ITestDatabase>();
+                    var logger = sp.GetRequiredService<ILogger<IReusableTestDatabase>>();
+                    logger.LogInformation($"Ensuring reused database");
+                    var meta = db.EnsureDatabase(sp);
+
+                    logger.LogInformation($"Database set up with connection string: {meta.ConnectionString}");
+
+                    var databaseFactory = sp.GetRequiredService<IUmbracoDatabaseFactory>();
+                    var connectionStrings = sp.GetRequiredService<IOptionsMonitor<ConnectionStrings>>();
+                    var runtimeState = sp.GetRequiredService<IRuntimeState>();
+
+                    databaseFactory.Configure(meta.ToStronglyTypedConnectionString());
+                    connectionStrings.CurrentValue.ConnectionString = meta.ConnectionString;
+                    connectionStrings.CurrentValue.ProviderName = meta.Provider;
+
+                    runtimeState.DetermineRuntimeLevel();
+                    sp.GetRequiredService<IEventAggregator>().Publish(new UnattendedInstallNotification());
+                }));
+
+            }
         }
     }
 }

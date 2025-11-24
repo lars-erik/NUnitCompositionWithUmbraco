@@ -90,4 +90,15 @@ public class ExtendableSetUpFixture : SetUpFixture, IExtendableLifecycle
         }
         setupMethod.AddPostHandler(handler);
     }
+
+    public void AddPostHandler(IMethodInfo setUpTearDownMethod, Action handler)
+    {
+        var setupMethod = OneTimeSetUpMethods.OfType<LifecycleMethodWrapper>().FirstOrDefault(x => x == setUpTearDownMethod);
+        if (setupMethod == null)
+        {
+            MakeInvalid($"Cannot add post handler. No OneTimeSetUp method found with name '{setUpTearDownMethod.Name}'.");
+            return;
+        }
+        setupMethod.AddPostHandler(handler);
+    }
 }

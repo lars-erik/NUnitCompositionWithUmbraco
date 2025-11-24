@@ -108,7 +108,7 @@ public abstract class SeededUmbracoTestServerSetUpBase<TMainController> : Umbrac
             testDatabase = sp.GetRequiredService<IReusableTestDatabase>();
             var logger = sp.GetRequiredService<ILogger<SeededUmbracoTestServerSetUpBase<TMainController>>>();
             logger.LogInformation($"Ensuring reused database");
-            var meta = testDatabase.EnsureDatabase();
+            var meta = testDatabase.EnsureDatabase(Services);
             databaseMeta = meta;
 
             logger.LogInformation($"Database set up with connection string: {meta.ConnectionString}");

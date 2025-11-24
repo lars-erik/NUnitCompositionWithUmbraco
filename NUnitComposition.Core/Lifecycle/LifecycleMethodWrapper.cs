@@ -30,7 +30,9 @@ internal class LifecycleMethodWrapper : MethodWrapperBase<LifecycleMethodWrapper
 
             var fixtureType = proxiedFixture.GetType();
             var methodName = MethodInfo.Name;
-            var inheritedMethod = fixtureType.GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)!;
+            var inheritedMethod = fixtureType
+                .GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
+                .Single(method => method.Name == methodName && method.DeclaringType == MethodInfo.DeclaringType);
             var methodInfo = new MethodWrapper(fixtureType, inheritedMethod);
 
             // This is only really here to get around the UmbracoTestOptionBase checking for a TestMethod

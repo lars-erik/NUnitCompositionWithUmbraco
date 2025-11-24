@@ -11,4 +11,5 @@ public interface IExtendableLifecycle : ITest
     IMethodInfo[] OneTimeTearDownMethods { get; set; }
     void AddInterceptor(IInterceptor interceptor);
     void AddPostHandler(string methodName, Action handler);
+    void AddPostHandler(IMethodInfo setUpTearDownMethod, Action handler);
 }
