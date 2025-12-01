@@ -11,7 +11,7 @@ public class ExtendableSetUpFixture : SetUpFixture, IExtendableLifecycle
 
     public new ITypeInfo TypeInfo => base.TypeInfo!;
 
-    public override string? MethodName => OneTimeSetUpMethods.First().Name;
+    public override string? MethodName => OneTimeSetUpMethods.FirstOrDefault()?.Name;
 
     IMethodInfo[] IExtendableLifecycle.SetUpMethods
     {
@@ -55,8 +55,8 @@ public class ExtendableSetUpFixture : SetUpFixture, IExtendableLifecycle
     public ExtendableSetUpFixture(ExtendableSetUpFixture setupFixture, ITestFilter filter)
         : base(setupFixture, filter)
     {
-        SetUpMethods = TypeInfo.GetMethodsWithAttribute<SetUpAttribute>(true);
-        TearDownMethods = TypeInfo.GetMethodsWithAttribute<TearDownAttribute>(true);
+        SetUpMethods = setupFixture.TypeInfo.GetMethodsWithAttribute<SetUpAttribute>(true);
+        TearDownMethods = setupFixture.TypeInfo.GetMethodsWithAttribute<TearDownAttribute>(true);
     }
 
     public void DelayedValidate()
