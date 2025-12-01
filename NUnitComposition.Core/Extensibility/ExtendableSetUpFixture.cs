@@ -2,6 +2,7 @@
 using NUnit.Framework.Interfaces;
 using NUnit.Framework.Internal;
 using NUnitComposition.Lifecycle;
+using System.Diagnostics;
 
 namespace NUnitComposition.Extensibility;
 
@@ -55,8 +56,8 @@ public class ExtendableSetUpFixture : SetUpFixture, IExtendableLifecycle
     public ExtendableSetUpFixture(ExtendableSetUpFixture setupFixture, ITestFilter filter)
         : base(setupFixture, filter)
     {
-        SetUpMethods = setupFixture.TypeInfo.GetMethodsWithAttribute<SetUpAttribute>(true);
-        TearDownMethods = setupFixture.TypeInfo.GetMethodsWithAttribute<TearDownAttribute>(true);
+        SetUpMethods = setupFixture.SetUpMethods;
+        TearDownMethods = setupFixture.TearDownMethods;
     }
 
     public void DelayedValidate()
@@ -69,7 +70,16 @@ public class ExtendableSetUpFixture : SetUpFixture, IExtendableLifecycle
 
     public override TestSuite Copy(ITestFilter filter)
     {
-        return new ExtendableSetUpFixture(this, filter);
+        FilterContext.RegisterTestFilter(filter);
+
+        var copy = new ExtendableSetUpFixture(this, filter)
+        {
+            Proxy = Proxy,
+            Fixture = Proxy
+        };
+        copy.interceptors.AddRange(interceptors);
+
+        return copy;
     }
 
     public void SetFixture(object proxy)

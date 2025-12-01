@@ -1,4 +1,5 @@
-﻿using Castle.DynamicProxy;
+﻿using System.Diagnostics;
+using Castle.DynamicProxy;
 using NUnit.Framework.Interfaces;
 using NUnit.Framework.Internal;
 using System.Diagnostics.CodeAnalysis;
@@ -21,17 +22,18 @@ public class ExtendableSetUpFixtureAttribute : SetUpFixtureAttribute, IFixtureBu
 
     IEnumerable<TestSuite> IFixtureBuilder.BuildFrom(ITypeInfo typeInfo)
     {
-        return BuildFrom(typeInfo);
+        return BuildFrom(typeInfo, null);
     }
 
-    public IEnumerable<TestSuite> BuildFrom(ITypeInfo typeInfo, IPreFilter filter)
+    IEnumerable<TestSuite> IFixtureBuilder2.BuildFrom(ITypeInfo typeInfo, IPreFilter filter)
     {
-        return BuildFrom(typeInfo);
+        return BuildFrom(typeInfo, filter);
     }
 
-    public new IEnumerable<TestSuite> BuildFrom(ITypeInfo typeInfo)
+    public new IEnumerable<TestSuite> BuildFrom(ITypeInfo typeInfo, IPreFilter? filter)
     {
-        // System.Diagnostics.Debugger.Launch();
+        FilterContext.RegisterPreFilter(filter);
+
         var fixture = new ExtendableSetUpFixture(typeInfo);
 
         try
