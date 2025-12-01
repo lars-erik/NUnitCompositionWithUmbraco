@@ -12,6 +12,7 @@ public class ExtendableSetUpFixture : SetUpFixture, IExtendableLifecycle
 
     public new ITypeInfo TypeInfo => base.TypeInfo!;
 
+    // TODO: These should be null, and we should rather patch Umbraco to look at the fixture type first.
     public override string? MethodName => OneTimeSetUpMethods.FirstOrDefault()?.Name;
 
     IMethodInfo[] IExtendableLifecycle.SetUpMethods
