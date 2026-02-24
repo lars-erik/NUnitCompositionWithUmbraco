@@ -53,7 +53,6 @@ public abstract class SeededUmbracoIntegrationSetUpBase(bool boot = false) : Umb
         services.AddSingleton(typeof(IReusableTestDatabase), sp => sp.CreateInstance(databaseType));
         services.AddSingleton<ITestDatabase>(sp => sp.GetRequiredService<IReusableTestDatabase>());
 
-
         services.AddUnique<IUmbracoContextAccessor, TestUmbracoContextAccessor>();
     }
 

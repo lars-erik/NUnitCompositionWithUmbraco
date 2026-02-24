@@ -9,39 +9,26 @@ using Umbraco.Cms.Tests.Common.Testing;
 
 public static class UmbracoIntegrationTestPatches
 {
-    private static readonly Type assemblyProviderType = typeof(DefaultUmbracoAssemblyProvider);
-    private static readonly FieldInfo entrypointAssemblyField = assemblyProviderType.GetField("_entryPointAssembly", BindingFlags.NonPublic | BindingFlags.Instance)!;
-
     private static readonly Type testOptionAttributeBaseType = typeof(TestOptionAttributeBase);
     private static readonly MethodInfo testOptionGetTestOptionsMethod = testOptionAttributeBaseType.GetMethod(nameof(TestOptionAttributeBase.GetTestOptions), [typeof(MethodInfo)])!;
     private static readonly MethodInfo testOptionGetMethod = testOptionAttributeBaseType.GetMethod("Get", BindingFlags.NonPublic | BindingFlags.Static)!;
+
+    private static readonly Type referenceResolverType = Type.GetType("Umbraco.Cms.Core.Composing.ReferenceResolver, Umbraco.Core")!;
+    private static readonly MethodInfo referenceResolverGetAssemblyFoldersMethod = referenceResolverType.GetMethod("GetAssemblyFolders", BindingFlags.Static | BindingFlags.NonPublic)!;
 
     public static void ApplyPatches(this GlobalSetupTeardown umbracoGlobalSetup)
     {
         var harmony = new Harmony(nameof(Umbraco.Community.Integration.Tests.Extensions));
 
-        var assemblyProviderCtor = assemblyProviderType.GetConstructors().Single(); // Let's break if this ever changes
-
-        harmony.Patch(assemblyProviderCtor, postfix: new HarmonyMethod(ReplaceDynamicEntryAssembly));
-
+        harmony.Patch(referenceResolverGetAssemblyFoldersMethod, postfix: new HarmonyMethod(ReplacedGetAssemblyLocation));
         harmony.Patch(testOptionGetTestOptionsMethod.MakeGenericMethod(typeof(UmbracoTestAttribute)), prefix: new HarmonyMethod(ScanReflectedTypeInsteadOfDeclaringType));
     }
 
-    public static void ReplaceDynamicEntryAssembly(DefaultUmbracoAssemblyProvider __instance)
+    private static void ReplacedGetAssemblyLocation(ref IEnumerable<string?> __result)
     {
-        var entryPointAssembly = (Assembly)entrypointAssemblyField.GetValue(__instance)!;
-        if (entryPointAssembly.GetName().Name == ModuleScope.DEFAULT_ASSEMBLY_NAME)
-        {
-            var firstNonDelegateType = entryPointAssembly.ExportedTypes.FirstOrDefault(type => !type.IsAssignableTo(typeof(MulticastDelegate)));
-            if (firstNonDelegateType != null)
-            {
-                var baseType = firstNonDelegateType.BaseType;
-                var baseTypeAssembly = baseType!.Assembly;
-                entrypointAssemblyField.SetValue(__instance, baseTypeAssembly);
-            }
-        }
+        __result = __result.Where(x => !String.IsNullOrWhiteSpace(x));
     }
-
+    
     public static bool ScanReflectedTypeInsteadOfDeclaringType(MethodInfo method, TestOptionAttributeBase __instance, ref UmbracoTestAttribute __result)
     {
         var attr = ((UmbracoTestAttribute[])method.GetCustomAttributes(typeof(UmbracoTestAttribute), true)).FirstOrDefault();
@@ -49,6 +36,4 @@ public static class UmbracoIntegrationTestPatches
         __result = (UmbracoTestAttribute)testOptionGetMethod.MakeGenericMethod(typeof(UmbracoTestAttribute)).Invoke(null, [type, attr])!;
         return false;
     }
-
-
 }
