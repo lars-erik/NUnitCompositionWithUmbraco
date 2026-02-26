@@ -10,10 +10,10 @@ public class MakeOneTimeLifecycleAttribute : Attribute, IApplyToTest, IApplyToCo
     private readonly string[] setUpNames;
     private readonly string[] tearDownNames;
 
-    public MakeOneTimeLifecycleAttribute(string[] setUpNames, string[] tearDownNames)
+    public MakeOneTimeLifecycleAttribute(string[]? setUpNames = null, string[]? tearDownNames = null)
     {
-        this.setUpNames = setUpNames;
-        this.tearDownNames = tearDownNames;
+        this.setUpNames = setUpNames ?? [];
+        this.tearDownNames = tearDownNames ?? [];
     }
 
     public void ApplyToContext(TestExecutionContext context)
@@ -34,10 +34,10 @@ public class MakeOneTimeLifecycleAttribute : Attribute, IApplyToTest, IApplyToCo
             var tearDownsToMove = extendable.TearDownMethods.Where(x => tearDownNames.Contains(x.Name)).ToArray();
 
             var newOneTimeSetUps = setUpsToMove
-                .Select(WrapSetUpMethod)
+                .Select(WrapLifecycleMethod)
                 .Union(extendable.OneTimeSetUpMethods)
                 .ToArray();
-            var newOneTimeTearDowns = extendable.OneTimeTearDownMethods.Union(tearDownsToMove).ToArray();
+            var newOneTimeTearDowns = extendable.OneTimeTearDownMethods.Union(tearDownsToMove.Select(WrapLifecycleMethod)).ToArray();
 
             var remainingSetUps = extendable.SetUpMethods.Except(setUpsToMove).ToArray();
             var remainingTearDowns = extendable.TearDownMethods.Except(tearDownsToMove).ToArray();
@@ -54,7 +54,7 @@ public class MakeOneTimeLifecycleAttribute : Attribute, IApplyToTest, IApplyToCo
         }
     }
 
-    protected virtual IMethodInfo WrapSetUpMethod(IMethodInfo methodInfo)
+    protected virtual IMethodInfo WrapLifecycleMethod(IMethodInfo methodInfo)
     {
         // TODO: Figure out if we always want the fake direct setup methods.
         return new LifecycleMethodWrapper(methodInfo.TypeInfo.Type, methodInfo.MethodInfo);

@@ -43,10 +43,17 @@ public class ReusableDatabaseAttribute : Attribute, IApplyToTest
             }
             else if (extendable.TypeInfo!.Type.IsAssignableTo(typeof(UmbracoTestServerTestBase)))
             {
-                extendable.AddPostHandler(
-                    extendable.OneTimeSetUpMethods.Single(x => x.Name == nameof(UmbracoTestServerTestBase.Setup) && x.TypeInfo.Type == typeof(UmbracoTestServerTestBase)), 
-                    () => EnsureSeeded(extendable.Fixture!)
-                );
+                try
+                {
+                    extendable.AddPostHandler(
+                        extendable.OneTimeSetUpMethods.Single(x => x.Name == nameof(UmbracoTestServerTestBase.Setup) && x.TypeInfo.Type.IsAssignableTo(typeof(UmbracoTestServerTestBase))), 
+                        () => EnsureSeeded(extendable.Fixture!)
+                    );
+                }
+                catch (Exception e)
+                {
+                    throw new Exception("Didn't find, or found multiple methods named Setup that aren't in an override chain.", e);
+                }
             }
 
             var cleanupMethod = new DelegateMethodWrapper(test.TypeInfo!.Type, GetType(), nameof(RemoveStaticDbInstance));
@@ -68,6 +75,6 @@ public class ReusableDatabaseAttribute : Attribute, IApplyToTest
     public static void RemoveStaticDbInstance()
     {
         TestContext.Progress.WriteLine("Resetting dbinstance field");
-        typeof(UmbracoIntegrationTestBase).GetField("s_dbInstance", BindingFlags.NonPublic | BindingFlags.Static)!.SetValue(null, null);
+        typeof(UmbracoIntegrationTestBase).GetField("_dbInstance", BindingFlags.NonPublic | BindingFlags.Static)!.SetValue(null, null);
     }
 }

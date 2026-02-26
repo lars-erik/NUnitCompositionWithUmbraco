@@ -1,6 +1,9 @@
-﻿using System.Linq.Expressions;
+﻿using Lucene.Net.Search;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using NUnitComposition.Extensibility;
+using NUnitComposition.Lifecycle;
+using System.Linq.Expressions;
 using Umbraco.Cms.Api.Management.Controllers.Security;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Scoping;
@@ -16,6 +19,7 @@ namespace UmbracoTestsComposition.TestServerReusedDatabase;
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerFixture, Boot = true, Logger = UmbracoTestOptions.Logger.Serilog)]
 [ExtendableSetUpFixture]
 [OneTimeUmbracoSetUp]
+[MakeOneTimeLifecycle(tearDownNames:[nameof(TearDownClient)])]
 [ServiceProvider]
 [ReusableDatabase(nameof(ConfigureTestDatabaseOptions))]
 public abstract class TestServerReusedDatabaseSampleSetUpBase : ManagementApiTest<BackOfficeController>
@@ -30,8 +34,15 @@ public abstract class TestServerReusedDatabaseSampleSetUpBase : ManagementApiTes
 
         services.AddKeyedTransient<HttpClient>("TestServerClient", (_, _) =>
         {
-            AuthenticateClientAsync(Client, "admin@example.com", "adminadminadmin", true).GetAwaiter().GetResult();
-            return Client;
+            var client = Factory.CreateClient(new WebApplicationFactoryClientOptions
+            {
+                AllowAutoRedirect = false,
+                BaseAddress = new Uri("https://localhost/", UriKind.Absolute),
+            });
+            AddOnFixtureTearDown(() => client.Dispose());
+            AuthenticateClientAsync(client, "admin@example.com", "adminadminadmin", true).GetAwaiter().GetResult();
+            TestContext.Progress.WriteLine($"Authenticated client with header {client.DefaultRequestHeaders.Authorization}");
+            return client;
         });
     }
 
@@ -70,5 +81,9 @@ public abstract class TestServerReusedDatabaseSampleSetUpBase : ManagementApiTes
         await TestContext.Progress.WriteLineAsync($"[{typeof(TestServerReusedDatabaseSampleSetUpBase)}] Seed document type created successfully.");
     }
 
-    protected override Expression<Func<BackOfficeController, object>> MethodSelector => _ => _.Token();
+    protected override Expression<Func<BackOfficeController, object>> MethodSelector
+    {
+        get => _ => _.Token();
+        set => throw new NotImplementedException();
+    }
 }

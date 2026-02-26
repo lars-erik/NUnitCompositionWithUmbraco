@@ -227,13 +227,10 @@ public abstract class SeededUmbracoTestServerSetUpBase<TMainController> : Umbrac
 
             Assert.IsTrue(changePasswordAttempt.Success);
 
-            var backOfficeApplicationManager =
-                serviceScope.ServiceProvider.GetRequiredService<IBackOfficeApplicationManager>() as
-                    BackOfficeApplicationManager;
+            var appManager = serviceScope.ServiceProvider.GetRequiredService<IOpenIddictApplicationManager>();
 
-            // TODO: This is about to become internal, so we might either end up having to use reflect, or we need to demand it _won't_ be hidden.
             backofficeOpenIddictApplicationDescriptor =
-                backOfficeApplicationManager.BackofficeOpenIddictApplicationDescriptor(client.BaseAddress);
+                (OpenIddictApplicationDescriptor)(await appManager.FindByClientIdAsync(client.BaseAddress!.ToString()))!;
 
             scope.Complete();
         }

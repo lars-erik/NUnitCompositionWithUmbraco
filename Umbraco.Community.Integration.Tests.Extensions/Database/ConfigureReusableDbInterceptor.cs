@@ -88,7 +88,7 @@ public class ConfigureReusableDbInterceptor : IInterceptor
 
             // TODO: Always pass settings as well?
             var db = (IReusableTestDatabase)Activator.CreateInstance(databaseType, [testHelper, (UmbracoIntegrationTestBase)invocation.Proxy])!;
-            typeof(UmbracoIntegrationTestBase).GetField("s_dbInstance", BindingFlags.NonPublic | BindingFlags.Static)!.SetValue(null, db);
+            typeof(UmbracoIntegrationTestBase).GetField("_dbInstance", BindingFlags.NonPublic | BindingFlags.Static)!.SetValue(null, db);
             services.AddSingleton(typeof(IReusableTestDatabase), db);
 
             if (fixture.GetType().IsAssignableTo(typeof(UmbracoTestServerTestBase)))
