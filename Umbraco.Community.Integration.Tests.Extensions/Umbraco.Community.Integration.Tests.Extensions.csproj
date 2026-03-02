@@ -12,7 +12,7 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/lars-erik/NUnitCompositionWithUmbraco</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>17.0.0-beta008</Version>
+    <Version>17.0.0-beta009</Version>
     <IncludeSymbols>True</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
@@ -33,7 +33,7 @@
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.2" />
     <PackageReference Include="Lib.Harmony" Version="2.4.2" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
     <PackageReference Include="NUnit" Version="3.14.0" />
     <PackageReference Include="NUnit.Analyzers" Version="4.4.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
