@@ -32,6 +32,8 @@ public abstract class TestServerReusedDatabaseSampleSetUpBase : ManagementApiTes
     {
         base.ConfigureTestServices(services);
 
+        services.ConfigureHttpClientDefaults(b => b.RedactLoggedHeaders(_ => false));
+
         services.AddKeyedTransient<HttpClient>("TestServerClient", (_, _) =>
         {
             var client = Factory.CreateClient(new WebApplicationFactoryClientOptions

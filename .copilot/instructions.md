@@ -1,5 +1,17 @@
 # Copilot Instructions
 
+## MCP Servers
+
+Always use Context7 MCP when I need library/API documentation, code generation, setup or configuration steps without me having to explicitly ask.  
+We specifically use the following context7 IDs:
+- /umbraco/umbraco-cms
+- /umbraco/umbracodocs
+- /umbraco/umbraco.ui
+- documentation.openiddict.com
+- /openiddict/openiddict-documentation
+- /openiddict/openiddict-core
+- /openiddict/openiddict-samples
+
 ## Project Context
 
 This project demonstrates a technique for creating suite-scoped singletons in NUnit by:
