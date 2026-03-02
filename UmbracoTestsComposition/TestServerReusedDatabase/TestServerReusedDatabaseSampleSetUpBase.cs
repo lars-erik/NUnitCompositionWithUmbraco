@@ -1,5 +1,4 @@
-﻿using Lucene.Net.Search;
-using Microsoft.AspNetCore.Mvc.Testing;
+﻿using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using NUnitComposition.Extensibility;
 using NUnitComposition.Lifecycle;
@@ -42,6 +41,7 @@ public abstract class TestServerReusedDatabaseSampleSetUpBase : ManagementApiTes
                 BaseAddress = new Uri("https://localhost/", UriKind.Absolute),
             });
             AddOnFixtureTearDown(() => client.Dispose());
+            ClearCache();
             AuthenticateClientAsync(client, "admin@example.com", "adminadminadmin", true).GetAwaiter().GetResult();
             TestContext.Progress.WriteLine($"Authenticated client with header {client.DefaultRequestHeaders.Authorization}");
             return client;
