@@ -91,6 +91,12 @@ public class ConfigureReusableDbInterceptor : IInterceptor
             typeof(UmbracoIntegrationTestBase).GetField("_dbInstance", BindingFlags.NonPublic | BindingFlags.Static)!.SetValue(null, db);
             services.AddSingleton(typeof(IReusableTestDatabase), db);
 
+            services.Configure<ConnectionStrings>(options =>
+            {
+                options.ProviderName = db.Meta.Provider;
+                options.ConnectionString = db.Meta.ConnectionString;
+            });
+
             if (fixture.GetType().IsAssignableTo(typeof(UmbracoTestServerTestBase)))
             {
                 var existingFactories = services.Where(x => x.ServiceType == typeof(IHostedService) && x.ImplementationFactory?.Target == fixture);
@@ -100,19 +106,26 @@ public class ConfigureReusableDbInterceptor : IInterceptor
                     db = (IReusableTestDatabase)sp.GetRequiredService<ITestDatabase>();
                     var logger = sp.GetRequiredService<ILogger<IReusableTestDatabase>>();
                     logger.LogInformation($"Ensuring reused database");
-                    var meta = db.EnsureDatabase(sp);
+
+                    var meta = db.Meta;
+
+                    db.EnsureDatabase(sp);
 
                     logger.LogInformation($"Database set up with connection string: {meta.ConnectionString}");
 
                     var databaseFactory = sp.GetRequiredService<IUmbracoDatabaseFactory>();
-                    var connectionStrings = sp.GetRequiredService<IOptionsMonitor<ConnectionStrings>>();
                     var runtimeState = sp.GetRequiredService<IRuntimeState>();
 
                     databaseFactory.Configure(meta.ToStronglyTypedConnectionString());
-                    connectionStrings.CurrentValue.ConnectionString = meta.ConnectionString;
-                    connectionStrings.CurrentValue.ProviderName = meta.Provider;
+                    
+                    //// TODO: This seems too late for install handlers 
+                    //connectionStrings.CurrentValue.ConnectionString = meta.ConnectionString;
+                    //connectionStrings.CurrentValue.ProviderName = meta.Provider;
 
                     runtimeState.DetermineRuntimeLevel();
+
+                    // DatabaseSchemaAndDataCreatedNotification?
+
                     sp.GetRequiredService<IEventAggregator>().Publish(new UnattendedInstallNotification());
                 }));
 

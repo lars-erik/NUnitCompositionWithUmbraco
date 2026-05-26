@@ -20,11 +20,11 @@
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.2" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />
     <PackageReference Include="NUnit" Version="3.14.0" />
     <PackageReference Include="NUnit.Analyzers" Version="4.4.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
-    <PackageReference Include="Umbraco.Cms.Tests.Integration" Version="17.2.1" GeneratePathProperty="true" />
+    <PackageReference Include="Umbraco.Cms.Tests.Integration" Version="17.4.2" GeneratePathProperty="true" />
   </ItemGroup>
 
   <ItemGroup>
@@ -39,7 +39,8 @@
 
   <ItemGroup>
     <Folder Include="Common\" />
-    <Folder Include="TEMP\logs\" />
+    <Folder Include="TEMP\" />
+    <Folder Include="TEMP\reused-databases\" />
   </ItemGroup>
 
   <ItemGroup>

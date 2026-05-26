@@ -73,6 +73,8 @@ public class ReusableSqlServerTestDatabase : IReusableTestDatabase
         InitializeMetadata();
     }
 
+    public TestDbMeta? Meta => meta;
+
     public TestDbMeta EnsureDatabase(IServiceProvider? services)
     {
         lock (lockObj)

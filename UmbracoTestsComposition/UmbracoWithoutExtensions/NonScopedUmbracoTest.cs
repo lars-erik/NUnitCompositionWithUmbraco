@@ -1,4 +1,5 @@
-﻿using Umbraco.Cms.Core.Services;
+﻿using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
 
@@ -12,7 +13,7 @@ public class NonScopedUmbracoTest : UmbracoIntegrationTest
     public async Task GetsServicesFromBase()
     {
         var dataTypeService = GetRequiredService<IDataTypeService>();
-        var allTypes = await dataTypeService.GetAllAsync().ToAsyncEnumerable().ToListAsync();
-        Assert.That(allTypes, Has.Count.GreaterThan(0));
+        var allTypes = await dataTypeService.GetAllAsync();
+        Assert.That(allTypes.ToList(), Has.Count.GreaterThan(0));
     }
 }

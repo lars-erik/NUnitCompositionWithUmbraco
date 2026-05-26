@@ -3,10 +3,12 @@ using Microsoft.Extensions.DependencyInjection;
 using NUnitComposition.Extensibility;
 using NUnitComposition.Lifecycle;
 using System.Linq.Expressions;
+using OpenIddict.Abstractions;
 using Umbraco.Cms.Api.Management.Controllers.Security;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Scoping;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Infrastructure.Security;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.ManagementApi;
@@ -55,6 +57,20 @@ public abstract class TestServerReusedDatabaseSampleSetUpBase : ManagementApiTes
         {
             await SeedData(services);
             TestServerReusedDatabaseIsOnlySeededOnce.SeedCount++;
+
+            await TestContext.Progress.WriteLineAsync("Adding OpenID schema and seed data");
+
+            using var scope = services.CreateScope();
+            var openIdDictManager = scope.ServiceProvider.GetService<IOpenIddictApplicationManager?>();
+            if (openIdDictManager != null)
+            {
+                var initializer = scope.ServiceProvider.GetService<IBackOfficeApplicationManager>();
+                if (initializer != null)
+                {
+                    await initializer.EnsureBackOfficeApplicationAsync([new Uri("https://localhost")]);
+                }
+            }
+
             ReseedTrigger = false;
         };
     }
